@@ -1,3 +1,4 @@
+import { useAuthStore } from '@/stores/auth'
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 
@@ -42,6 +43,18 @@ const router = createRouter({
       component: () => import('../views/SignInView.vue')
     }
   ]
+})
+
+router.beforeResolve(async (to, from, next) => {
+  const authStore = useAuthStore()
+
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    return next({ name: 'login', query: { redirect: to.fullPath } })
+  } else if (to.meta.requiresGuest && authStore.isAuthenticated) {
+    return next({ name: 'home' })
+  } else {
+    return next()
+  }
 })
 
 export default router
