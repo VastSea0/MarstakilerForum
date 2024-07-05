@@ -1,29 +1,79 @@
-import Comment from "../models/comment.js"
+import Comment from "../models/comment.js";
+import likeComment from "../helpers/likeComment.js";
+import dislikeComment from "../helpers/dislikeComment.js";
 
 export const addComment = async (req, res, next) => {
     try {
-        const userId = req.user.id
-        const { content, topicId } = req.body
+        const userId = req.user.id;
+        const { content, topicId } = req.body;
         if (!content || !topicId) {
             return res.status(400).json({
                 success: false,
-                errors: "Lütfen geçerli bir yorum yazınız"
-            })
+                errors: "Lütfen geçerli bir yorum yazınız",
+            });
         }
-        const comment = await Comment.create({content, author: userId, topic: topicId })
+        const comment = await Comment.create({
+            content,
+            author: userId,
+            topic: topicId,
+        });
         if (comment) {
             return res.status(200).json({
                 success: true,
-                message: "Yorumunuz başarılı bir şekilde eklendi"
-            })
+                message: "Yorumunuz başarılı bir şekilde eklendi",
+            });
         } else {
             return res.status(400).json({
                 success: false,
-                errors: "Yorumunuz eklenemedi"
-            })
+                errors: "Yorumunuz eklenemedi",
+            });
         }
     } catch (error) {
-        console.log(error)
-        return next(error)
+        console.log(error);
+        return next(error);
     }
-}
+};
+
+export const likeCommentById = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const commentId = req.params.id;
+        await likeComment(userId, commentId)
+            .then((comment) => {
+                return res.status(200).json({
+                    success: true,
+                    message: "İşlem başarılı",
+                });
+            })
+            .catch((error) => {
+                return res.status(400).json({
+                    success: false,
+                    errors: "İşlem başarısız",
+                });
+            });
+    } catch (error) {
+        return next(error);
+    }
+};
+
+export const dislikeCommentById = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const commentId = req.params.id;
+        await dislikeComment(userId, commentId)
+            .then((comment) => {
+                return res.status(200).json({
+                    success: true,
+                    message: "İşlem başarılı",
+                });
+            })
+            .catch((error) => {
+                return res.status(400).json({
+                    success: false,
+                    errors: "İşlem başarısız",
+                });
+            });
+    } catch (error) {
+        return next(error);
+    }
+};
