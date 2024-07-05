@@ -1,116 +1,81 @@
-<script>
-
-</script>
+<script></script>
 <template>
   <div class="container text-center">
-  <div class="row">
-    
-    <div class="col-8">
-  
-      <!-- 
+    <div class="row">
+      <div class="col-8">
+        <!-- 
       GÖNDERİLERİN LİSTENECEĞİ YER
       -->
-     
-      <br>
-      <div class="post-list">
-        <div class="row">
-          <div class="card">
-            <div class="card-body">
-              <h1>Kullanıcı Adı: </h1>
-              <p>
-                Kullanıcı biyografisi
-              </p>
-            </div>
-            <div class="button-list">
-             
-              <div class="btn disabled" >
-                Takipçi sayısı | GÖnderi sayısı
+
+        <br />
+        <div class="post-list">
+          <div class="row">
+            <div class="card">
+              <div class="card-body">
+                <h1>Kullanıcı Adı:</h1>
+                <p>Kullanıcı biyografisi</p>
+              </div>
+              <div class="button-list">
+                <div class="btn disabled">Takipçi sayısı | GÖnderi sayısı</div>
               </div>
             </div>
-         
           </div>
-        </div>
-        <!--
+          <!--
         YORUMLAR
         -->
-        <div class="row">
+          <div class="row">
             <div class="col-4">
-                <h1>
-                    
-                </h1>
+              <h1></h1>
             </div>
-            <div class="col-8  ">
-                <center>
-                    <h1>Gönderilerin</h1>
-                    <div class="row">
-                        <div >
-                            <div class="card ">
-                                <div class="card-body">
-                                  <h1>Kullanıcı Adı: </h1>
-                                  <p>
-                                    Gönderi içeriği
-                                  </p>
-                                </div>
-                              </div>
-                        </div>
+            <div class="col-8">
+              <center>
+                <h1>Gönderilerin</h1>
+                <div class="row">
+                  <div>
+                    <div class="card">
+                      <div class="card-body">
+                        <h1>Kullanıcı Adı:</h1>
+                        <p>Gönderi içeriği</p>
                       </div>
-                </center>
-              
+                    </div>
+                  </div>
+                </div>
+              </center>
             </div>
-        </div>
-        <div class="row">
+          </div>
+          <div class="row">
             <div class="col-4">
-                <h1>
-                    
-                </h1>
+              <h1></h1>
             </div>
-            <div class="col-8  ">
-                <center>
-                   
-                    <div class="row">
-                        <div >
-                            <div class="card ">
-                                <div class="card-body">
-                                  <h1>Kullanıcı Adı: </h1>
-                                  <p>
-                                    GÖnderi içeriği
-                                  </p>
-                                </div>
-                              </div>
-                        </div>
+            <div class="col-8">
+              <center>
+                <div class="row">
+                  <div>
+                    <div class="card">
+                      <div class="card-body">
+                        <h1>Kullanıcı Adı:</h1>
+                        <p>GÖnderi içeriği</p>
                       </div>
-                </center>
-              
+                    </div>
+                  </div>
+                </div>
+              </center>
             </div>
+          </div>
         </div>
-     
       </div>
-     
-
-
-    </div>
-    <div class="col">
-      <sidebar-component></sidebar-component>
+      <div class="col">
+        <Sidebar></Sidebar>
+      </div>
     </div>
   </div>
-</div>
 </template>
-<script>
-import SidebarComponent from '/src/components/sidebar.vue';
-
-export default {
-  components: {
-    SidebarComponent
-  },
-  // Diğer component properties
-};
+<script setup>
+import Sidebar from '/src/components/sidebarItem.vue'
 </script>
 
-<style>
- 
-
+<style scoped>
 .card {
-   
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
@@ -119,7 +84,6 @@ export default {
 
 .card h3 {
   margin-bottom: 10px;
- 
 }
 
 .form-label {
@@ -137,16 +101,13 @@ export default {
 .card-body {
   padding: 15px;
   border-radius: 8px;
- 
+
   margin-bottom: 15px;
 }
 
 .card-body h1 {
   margin-bottom: 5px;
-  
 }
-
- 
 
 .button-list {
   display: flex;

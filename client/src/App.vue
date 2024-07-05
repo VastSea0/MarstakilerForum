@@ -45,8 +45,13 @@ import { RouterLink, RouterView } from 'vue-router'
                   </li>
                   <li><hr class="dropdown-divider" /></li>
                   <li>
-                    <RouterLink class="dropdown-item" to="/katil">
-                      <i class="fa-solid fa-right-to-bracket"></i> Bize Katıl</RouterLink
+                    <RouterLink class="dropdown-item" to="/login">
+                      <i class="fa-solid fa-right-to-bracket"></i> Giriş yap</RouterLink
+                    >
+                  </li>
+                  <li>
+                    <RouterLink class="dropdown-item" to="/register">
+                      <i class="fa-solid fa-right-to-bracket"></i> Kayıt ol</RouterLink
                     >
                   </li>
                 </ul>
