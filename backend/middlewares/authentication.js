@@ -1,5 +1,5 @@
-import User from "../models/user.js"
-import jwt from "jsonwebtoken"
+import User from "../models/user.js";
+import jwt from "jsonwebtoken";
 
 export const authenticate = async (req, res, next) => {
     const authHeader = req.headers.authorization || req.headers.Authorization;
@@ -7,13 +7,13 @@ export const authenticate = async (req, res, next) => {
         req.user = null;
         return next();
     }
-    
+
     const token = authHeader.split(" ")[1];
     if (!token) {
         req.user = null;
         return next();
     }
-    
+
     try {
         const decoded = jwt.verify(token, "secret-key");
         req.user = decoded.userData;
@@ -31,29 +31,29 @@ export const requireAuth = (req, res, next) => {
     } else {
         return res.status(401).json({
             success: false,
-            errors: "Lütfen giriş yapınız"
+            errors: "Lütfen giriş yapınız",
         });
     }
 };
 
 export const notAuth = (req, res, next) => {
     if (req.user) {
-        console.log("41 REQ USER: ", req.user)
+        console.log("41 REQ USER: ", req.user);
         return res.status(409).json({
             success: false,
-            errors: "Zaten giriş yapılmış"
+            errors: "Zaten giriş yapılmış",
         });
     }
     const refreshToken = req.cookies.refreshToken;
     if (refreshToken) {
         jwt.verify(refreshToken, "secret-key", (err, decoded) => {
             if (err) {
-                return next()
+                return next();
             } else {
-                console.log("satır 53, decoded user: ", decoded.userData)
+                console.log("satır 53, decoded user: ", decoded.userData);
                 return res.status(409).json({
                     success: false,
-                    errors: "Zaten giriş yapılmış"
+                    errors: "Zaten giriş yapılmış",
                 });
             }
         });
@@ -62,43 +62,38 @@ export const notAuth = (req, res, next) => {
     }
 };
 
-
-
 export const checkRefreshTokenMiddleware = async (req, res, next) => {
-  const authHeader = req.headers.authorization || req.headers.Authorization;
+    const authHeader = req.headers.authorization || req.headers.Authorization;
 
-  if (!authHeader) {
-    const refreshToken = req.cookies.refreshToken;
+    if (!authHeader) {
+        const refreshToken = req.cookies.refreshToken;
 
-    if (!refreshToken) {
-      return res.status(401).json({
-        success: false,
-        errors: "Oturum çerezi bulunamadı"
-      });
-    }
+        if (!refreshToken) {
+            return res.status(403).json({
+                success: false,
+                errors: "Oturum çerezi bulunamadı",
+            });
+        }
 
-    jwt.verify(refreshToken, "secret-key", (err, decoded) => {
-      if (err) {
-        return res.status(401).json({
-          success: false,
-          errors: "Geçersiz oturum çerezi"
+        jwt.verify(refreshToken, "secret-key", (err, decoded) => {
+            if (err) {
+                return res.status(403).json({
+                    success: false,
+                    errors: "Geçersiz oturum çerezi",
+                });
+            }
+            req.user = decoded.userData;
+            return next();
         });
-      }
-      req.user = decoded.userData;
-      return next();
-    });
-
-  } else {
-    // Eğer authHeader varsa, yani access token varsa
-    // Sadece uyarı ver ve devam et
-    return res.status(403).json({
-      success: false,
-      errors: "Mevcut tokenin süresinin bitmesini bekleyin lütfen"
-    });
-  }
+    } else {
+        // Eğer authHeader varsa, yani access token varsa
+        // Sadece uyarı ver ve devam et
+        return res.status(403).json({
+            success: false,
+            errors: "Mevcut tokenin süresinin bitmesini bekleyin lütfen",
+        });
+    }
 };
-
-
 
 export const authrole = (...roles) => {
     return (req, res, next) => {
@@ -107,7 +102,7 @@ export const authrole = (...roles) => {
         } else {
             return res.status(401).json({
                 success: false,
-                errors: "Yetkisiz erişim"
+                errors: "Yetkisiz erişim",
             });
         }
     };

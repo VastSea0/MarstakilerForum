@@ -1,18 +1,18 @@
-import User from "../models/user.js"
+import User from "../models/user.js";
 const existUser = async (req, res, next) => {
     try {
-        const username = req.body.username
-        const user = await User.findOne({ username })
+        const username = req.body.username;
+        const user = await User.findOne({ username });
         if (user) {
             return res.status(400).json({
-                status: false,
-                errors: "Bu kullanıcı adı zaten kayıtlı"
-            })
+                success: false,
+                errors: "Bu kullanıcı adı zaten kayıtlı",
+            });
         }
-        return next()
+        return next();
     } catch (error) {
-        return next(error)
+        return next(error);
     }
-}
+};
 
-export default existUser
+export default existUser;
