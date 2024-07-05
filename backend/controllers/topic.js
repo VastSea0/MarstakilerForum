@@ -1,68 +1,83 @@
-import Topic from "../models/topic.js"
+import Topic from "../models/topic.js";
 import likeTopic from "../helpers/likeTopic.js";
-import dislikeTopic from "../helpers/dislikeTopic.js"
+import dislikeTopic from "../helpers/dislikeTopic.js";
+import mongoose from "mongoose";
 
 export const getAllTopic = async (req, res, next) => {
     try {
-        let sortBy = req.query.sortBy || 'createdAt'; // Default sorting field
-        let sortDirection = req.query.sortDirection || 'desc'; // Default sorting direction
+        let sortBy = req.query.sortBy || "createdAt"; // Default sorting field
+        let sortDirection = req.query.sortDirection || "desc"; // Default sorting direction
 
         // Listeleyebileceğimiz alanları tanımlayalım
-        const validSortFields = ['createdAt', 'likeCount', 'dislikeCount', 'commentCount'];
+        const validSortFields = [
+            "createdAt",
+            "likeCount",
+            "dislikeCount",
+            "commentCount",
+        ];
 
         // Eğer sortBy parametresi geçerli bir alan ise ve sortDirection 'asc' veya 'desc' ise sıralama işlemini gerçekleştirelim
-        if (validSortFields.includes(sortBy) && (sortDirection === 'asc' || sortDirection === 'desc')) {
+        if (
+            validSortFields.includes(sortBy) &&
+            (sortDirection === "asc" || sortDirection === "desc")
+        ) {
             const sortStage = {};
-            sortStage[sortBy] = sortDirection === 'asc' ? 1 : -1;
+            sortStage[sortBy] = sortDirection === "asc" ? 1 : -1;
 
             const topics = await Topic.aggregate([
                 // Yazar bilgilerini almak için users koleksiyonu ile join işlemi gerçekleştirelim
                 {
                     $lookup: {
-                        from: 'users', // users koleksiyonu
-                        localField: 'author', // topics koleksiyonundaki alan
-                        foreignField: '_id', // users koleksiyonundaki alan
-                        as: 'authorDetails' // birleştirilen veri için alias
-                    }
+                        from: "users", // users koleksiyonu
+                        localField: "author", // topics koleksiyonundaki alan
+                        foreignField: "_id", // users koleksiyonundaki alan
+                        as: "authorDetails", // birleştirilen veri için alias
+                    },
                 },
                 // Unwind işlemi ile authorDetails array'ini açalım
                 {
-                    $unwind: '$authorDetails'
+                    $unwind: "$authorDetails",
                 },
                 // Gruplama işlemi yaparak like, dislike ve yorum sayılarını toplayalım
                 {
                     $group: {
-                        _id: '$_id', // topic id'ye göre grupla
-                        title: { $first: '$title' },
-                        content: { $first: '$content' },
-                        author: { $first: '$author' },
-                        authorName: { $first: '$authorDetails.username' },
-                        likeCount: { $sum: { $size: { $ifNull: ['$likes', []] } } },
-                        dislikeCount: { $sum: { $size: { $ifNull: ['$dislikes', []] } } },
-                        commentCount: { $sum: { $size: { $ifNull: ['$comments', []] } } },
-                        createdAt: { $first: '$createdAt' }
-                    }
+                        _id: "$_id", // topic id'ye göre grupla
+                        title: { $first: "$title" },
+                        content: { $first: "$content" },
+                        author: { $first: "$author" },
+                        authorName: { $first: "$authorDetails.username" },
+                        likeCount: {
+                            $sum: { $size: { $ifNull: ["$likes", []] } },
+                        },
+                        dislikeCount: {
+                            $sum: { $size: { $ifNull: ["$dislikes", []] } },
+                        },
+                        commentCount: {
+                            $sum: { $size: { $ifNull: ["$comments", []] } },
+                        },
+                        createdAt: { $first: "$createdAt" },
+                    },
                 },
                 // Kullanıcı tarafından belirtilen alana göre sıralama yapalım
-                { $sort: sortStage }
+                { $sort: sortStage },
             ]);
 
             if (topics.length === 0) {
                 return res.status(404).json({
                     success: false,
-                    errors: "Listelenecek bir gönderi bulunamadı"
+                    errors: "Listelenecek bir gönderi bulunamadı",
                 });
             }
 
             return res.status(200).json({
                 success: true,
                 messages: "Tüm gönderiler başarılı bir şekilde listelendi",
-                data: topics
+                data: topics,
             });
         } else {
             return res.status(400).json({
                 success: false,
-                errors: "Lütfen geçerli parametreler girin!"
+                errors: "Lütfen geçerli parametreler girin!",
             });
         }
     } catch (error) {
@@ -70,25 +85,23 @@ export const getAllTopic = async (req, res, next) => {
     }
 };
 export const getTopic = async (req, res, next) => {
-    const {
-        id
-    } = req.params;
+    const { id } = req.params;
     try {
         const topic = await Topic.findById(id)
-            .populate('author', 'username') // Yazar bilgisini al, sadece kullanıcı adını al
+            .populate("author", "username") // Yazar bilgisini al, sadece kullanıcı adını al
             .populate({
-                path: 'comments',
-                select: 'content user createdAt',
+                path: "comments",
+                select: "content user createdAt",
                 populate: {
-                    path: 'user',
-                    select: 'username'
-                } // Yorum yapan kullanıcının sadece kullanıcı adını al
+                    path: "user",
+                    select: "username",
+                }, // Yorum yapan kullanıcının sadece kullanıcı adını al
             });
 
         if (!topic) {
             return res.status(404).json({
                 success: false,
-                errors: 'Gönderi bulunamadı'
+                errors: "Gönderi bulunamadı",
             });
         }
 
@@ -107,60 +120,55 @@ export const getTopic = async (req, res, next) => {
             comments: topic.comments,
             commentCount,
             likeCount,
-            dislikeCount
-        }
+            dislikeCount,
+        };
         res.status(200).json({
             success: true,
             message: "Gönderi bilgileri başarılı bir şekilde alındı",
-            data: topicData
+            data: topicData,
         });
     } catch (error) {
-        console.error('Hata:', error);
-        return next(error)
+        console.error("Hata:", error);
+        return next(error);
     }
 };
 
 export const addTopic = async (req, res, next) => {
     try {
-        const userId = req.user.id
-        const {
-            title,
-            content
-        } = req.body
+        const userId = new mongoose.Types.ObjectId(req.user.id);
+        const { title, content } = req.body;
         const topic = await Topic.create({
             title,
             content,
-            author: userId
-        })
+            author: userId,
+        });
         if (!topic) {
             return res.status(400).json({
                 success: false,
-                errors: "Gönderi kayıt edilemedi"
-            })
+                errors: "Gönderi kayıt edilemedi",
+            });
         }
         return res.status(200).json({
             success: true,
             message: "Yeni gönderi başarılı bir şekilde kayıt edildi",
-            data: topic
-        })
+            data: topic,
+        });
     } catch (error) {
-        console.log(error)
-        return next(error)
+        console.log(error);
+        return next(error);
     }
-}
+};
 
 export const deleteTopic = async (req, res, next) => {
-    const {
-        id
-    } = req.params;
-    const userId = req.user._id; // Kullanıcının id'si
+    const { id } = req.params;
+    const userId = new mongoose.Types.ObjectId(req.user.id);
     try {
         const topic = await Topic.findById(id);
 
         if (!topic) {
             return res.status(404).json({
                 success: false,
-                errors: 'Gönderi bulunamadı'
+                errors: "Gönderi bulunamadı",
             });
         }
 
@@ -168,7 +176,7 @@ export const deleteTopic = async (req, res, next) => {
         if (topic.author.toString() !== userId) {
             return res.status(403).json({
                 success: false,
-                errors: 'Bu işlem için yetkiniz yok'
+                errors: "Bu işlem için yetkiniz yok",
             });
         }
 
@@ -176,50 +184,54 @@ export const deleteTopic = async (req, res, next) => {
 
         return res.status(200).json({
             success: true,
-            message: 'Gönderi başarıyla silindi'
+            message: "Gönderi başarıyla silindi",
         });
     } catch (error) {
-        console.error('Hata:', error);
-        return next(error)
+        console.error("Hata:", error);
+        return next(error);
     }
 };
 
 export const likeTopicById = async (req, res, next) => {
     try {
-        const userId = req.user.id
-        const topicId = req.params.id
-        await likeTopic(userId, topicId).then((topic) => {
-            return res.status(200).json({
-                success: true,
-                message: "İşlem başarılı"
+        const userId = req.user.id;
+        const topicId = req.params.id;
+        await likeTopic(userId, topicId)
+            .then((topic) => {
+                return res.status(200).json({
+                    success: true,
+                    message: "İşlem başarılı",
+                });
             })
-        }).catch((error) => {
-            return res.status(400).json({
-                success: false,
-                errors: "İşlem başarısız"
-            })
-        })
+            .catch((error) => {
+                return res.status(400).json({
+                    success: false,
+                    errors: "İşlem başarısız",
+                });
+            });
     } catch (error) {
-        return next(error)
+        return next(error);
     }
-}
+};
 
 export const dislikeTopicById = async (req, res, next) => {
     try {
-        const userId = req.user.id
-        const topicId = req.params.id
-        await dislikeTopic(userId, topicId).then((topic) => {
-            return res.status(200).json({
-                success: true,
-                message: "İşlem başarılı"
+        const userId = req.user.id;
+        const topicId = req.params.id;
+        await dislikeTopic(userId, topicId)
+            .then((topic) => {
+                return res.status(200).json({
+                    success: true,
+                    message: "İşlem başarılı",
+                });
             })
-        }).catch((error) => {
-            return res.status(400).json({
-                success: false,
-                errors: "İşlem başarısız"
-            })
-        })
+            .catch((error) => {
+                return res.status(400).json({
+                    success: false,
+                    errors: "İşlem başarısız",
+                });
+            });
     } catch (error) {
-        return next(error)
+        return next(error);
     }
-}
+};
