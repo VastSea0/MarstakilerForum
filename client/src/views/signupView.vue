@@ -1,10 +1,8 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
-const router = useRouter()
 
 const registerData = reactive({
   firstName: '',
@@ -20,7 +18,8 @@ async function submit() {
     await authStore.register(registerData)
     // router.replace({ name: 'login' })
   } catch (err) {
-    errorMessage.value = err.message
+    errorMessage.value = err.response?.data?.message || err.message || 'Login failed'
+    console.error('Login error:', err)
   }
 }
 </script>

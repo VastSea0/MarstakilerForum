@@ -2,6 +2,19 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useApi, useApiPrivate } from '@/combosables/useApi'
 
+const handleError = (error, defaultMessage) => {
+  if (error.response) {
+    console.error('Server error:', error.response.data)
+    throw new Error(error.response.data.message || defaultMessage)
+  } else if (error.request) {
+    console.error('No response:', error.request)
+    throw new Error('No response from server')
+  } else {
+    console.error('Error:', error.message)
+    throw error
+  }
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref({})
   const accessToken = ref('')
@@ -23,22 +36,12 @@ export const useAuthStore = defineStore('auth', () => {
   const login = async (payload) => {
     try {
       const { data } = await useApi().post('/auth/login', payload)
-      accessToken.value = data.access_token
+      console.log(data)
+      accessToken.value = data.token
+      authReady.value = true
       return data
     } catch (error) {
-      if (error.response) {
-        // Sunucudan gelen hata yanıtı
-        console.error('Server error:', error.response.data)
-        throw new Error(error.response.data.message || 'Login failed')
-      } else if (error.request) {
-        // İstek yapıldı ama yanıt alınamadı
-        console.error('No response:', error.request)
-        throw new Error('No response from server')
-      } else {
-        // İstek yapılırken bir şeyler ters gitti
-        console.error('Error:', error.message)
-        throw error
-      }
+      handleError(error, 'Failed to login')
     }
   }
 
@@ -47,29 +50,18 @@ export const useAuthStore = defineStore('auth', () => {
       const { data } = await useApi().post('/auth/register', payload)
       return data
     } catch (error) {
-      if (error.response) {
-        // Sunucudan gelen hata yanıtı
-        console.error('Server error:', error.response.data)
-        throw new Error(error.response.data.message || 'Login failed')
-      } else if (error.request) {
-        // İstek yapıldı ama yanıt alınamadı
-        console.error('No response:', error.request)
-        throw new Error('No response from server')
-      } else {
-        // İstek yapılırken bir şeyler ters gitti
-        console.error('Error:', error.message)
-        throw error
-      }
+      handleError(error, 'Failed to register')
     }
   }
 
   const getUser = async () => {
     try {
       const { data } = await useApiPrivate().get('/auth/user')
-      user.value = data
+      console.log(data)
+      user.value = data.data
       return data
     } catch (error) {
-      throw new Error(error.message)
+      handleError(error, 'Failed to fetch user')
     }
   }
 
@@ -78,19 +70,23 @@ export const useAuthStore = defineStore('auth', () => {
       const { data } = await useApiPrivate().post('/auth/logout')
       accessToken.value = ''
       user.value = {}
+      authReady.value = false
       return data
     } catch (error) {
-      throw new Error(error.message)
+      handleError(error, 'Failed to logout')
     }
   }
 
   const refresh = async () => {
     try {
-      const { data } = await useApi().post('/auth/token')
-      accessToken.value = data.access_token
+      const { data } = await useApi().get('/auth/token')
+      console.log(data)
+      user.value = data.data
+      accessToken.value = data.token
+      authReady.value = true
       return data
     } catch (error) {
-      throw new Error(error.message)
+      handleError(error, 'Failed to refresh token')
     }
   }
 

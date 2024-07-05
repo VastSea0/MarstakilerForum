@@ -1,6 +1,7 @@
 import { useAuthStore } from '@/stores/auth'
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import ProfileView from '../views/ProfileView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,24 +17,28 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue')
     },
     {
-      path: '/gonderiId',
-      name: 'gonderiId',
-      component: () => import('../views/PostView.vue')
+      path: '/topic/:id',
+      name: 'topic',
+      component: () => import('../views/PostView.vue'),
+      meta: { requiresAuth: true } // Örnek meta alanı, gereksinimlerinize göre güncelleyin
     },
     {
-      path: '/kullaniciId',
-      name: 'kullaniciId',
-      component: () => import('../views/ProfileView.vue')
+      path: '/profile/:id',
+      name: 'profile',
+      component: ProfileView,
+      meta: { requiresAuth: true } // Örnek meta alanı, gereksinimlerinize göre güncelleyin
     },
     {
       path: '/login',
-      name: 'Login',
-      component: () => import('../views/SignInView.vue')
+      name: 'login',
+      component: () => import('../views/SignInView.vue'),
+      meta: { requiresGuest: true } // Örnek meta alanı, gereksinimlerinize göre güncelleyin
     },
     {
       path: '/register',
-      name: 'Register',
-      component: () => import('../views/signupView.vue')
+      name: 'register',
+      component: () => import('../views/signupView.vue'),
+      meta: { requiresGuest: true } // Örnek meta alanı, gereksinimlerinize göre güncelleyin
     }
   ]
 })

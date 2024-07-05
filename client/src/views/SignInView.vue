@@ -1,6 +1,9 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
 import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const authStore = useAuthStore()
 
@@ -14,6 +17,7 @@ const errorMessage = ref('')
 async function submit() {
   try {
     await authStore.login(loginData)
+    router.push('/')
   } catch (err) {
     errorMessage.value = err.response?.data?.message || err.message || 'Login failed'
     console.error('Login error:', err)

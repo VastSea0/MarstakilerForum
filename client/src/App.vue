@@ -1,5 +1,34 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { toRaw } from 'vue'
+
+const authStore = useAuthStore()
+import { onMounted, watch } from 'vue'
+
+// Debug: authStore'in doğru şekilde yüklendiğinden emin olun
+console.log('authStore:', authStore)
+
+watch(
+  () => authStore.authReady,
+  (newVal) => {
+    console.log('authReady changed:', newVal)
+  },
+  { immediate: true }
+)
+
+watch(
+  () => authStore.user,
+  (newVal) => {
+    console.log('user changed:', newVal)
+  },
+  { immediate: true }
+)
+
+onMounted(() => {
+  console.log('Mounted: authStore.authReady:', authStore.authReady)
+  console.log('Mounted: authStore.user:', toRaw(authStore.user))
+})
 </script>
 
 <template>
@@ -7,7 +36,9 @@ import { RouterLink, RouterView } from 'vue-router'
     <div>
       <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid">
-          <a class="navbar-brand" href="/"> <i class="fas fa-home"></i> Marstakiler Forum</a>
+          <RouterLink class="navbar-brand" to="/">
+            <i class="fas fa-home"></i> Marstakiler Forum</RouterLink
+          >
           <button
             class="navbar-toggler"
             type="button"
@@ -26,48 +57,43 @@ import { RouterLink, RouterView } from 'vue-router'
                   ><i class="fa-solid fa-user-group"></i> Hakkımızda</RouterLink
                 >
               </li>
+              <template v-if="authStore.authReady">
+                <li class="nav-item dropdown">
+                  <RouterLink
+                    v-if="authStore.user && authStore.user.id"
+                    class="dropdown-item"
+                    :to="{ name: 'profile', params: { id: authStore.user.id } }"
+                    >Profil</RouterLink
+                  >
+                </li>
+              </template>
 
-              <li class="nav-item dropdown">
-                <button
-                  class="nav-link dropdown-toggle"
-                  role="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                >
-                  <i class="fa-solid fa-user"></i>
-                </button>
-                <ul class="dropdown-menu">
-                  <li><RouterLink class="dropdown-item" to="/gonderiId">Action</RouterLink></li>
-                  <li>
-                    <RouterLink class="dropdown-item" to="/kullaniciId"
-                      ><i class="fa-solid fa-user"></i> Profil</RouterLink
-                    >
-                  </li>
-                  <li><hr class="dropdown-divider" /></li>
-                  <li>
-                    <RouterLink class="dropdown-item" to="/login">
-                      <i class="fa-solid fa-right-to-bracket"></i> Giriş yap</RouterLink
-                    >
-                  </li>
-                  <li>
-                    <RouterLink class="dropdown-item" to="/register">
-                      <i class="fa-solid fa-right-to-bracket"></i> Kayıt ol</RouterLink
-                    >
-                  </li>
-                </ul>
-              </li>
+              <template v-else>
+                <li class="nav-item dropdown">
+                  <button
+                    class="nav-link dropdown-toggle"
+                    role="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <i class="fa-solid fa-user"></i>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li>
+                      <RouterLink class="dropdown-item" to="/login">
+                        <i class="fa-solid fa-right-to-bracket"></i> Giriş yap</RouterLink
+                      >
+                    </li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li>
+                      <RouterLink class="dropdown-item" to="/register">
+                        <i class="fa-solid fa-right-to-bracket"></i> Kayıt ol</RouterLink
+                      >
+                    </li>
+                  </ul>
+                </li>
+              </template>
             </ul>
-            <form class="d-flex" role="search">
-              <input
-                class="form-control me-2"
-                type="search"
-                placeholder="Ara"
-                aria-label="Search"
-              />
-              <button class="btn btn-outline-success" type="submit">
-                <i class="fa-solid fa-magnifying-glass"></i>
-              </button>
-            </form>
           </div>
         </div>
       </nav>

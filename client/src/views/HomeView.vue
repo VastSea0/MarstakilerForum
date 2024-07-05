@@ -1,4 +1,29 @@
-<script></script>
+<script setup>
+import Sidebar from '/src/components/sidebarItem.vue'
+import Post from '/src/components/postItem.vue'
+import { ref, onMounted, computed } from 'vue'
+import { useTopicsStore } from '@/stores/topics'
+
+const topicStore = useTopicsStore()
+const errorMessage = ref('')
+
+// topics'i store'dan computed olarak alıyoruz
+const posts = computed(() => topicStore.topics)
+
+const fetchPosts = async () => {
+  try {
+    await topicStore.getAllTopics()
+    // getAllTopics fonksiyonu artık posts'u doğrudan store'da güncelleyecek
+  } catch (err) {
+    errorMessage.value = err.message || 'Failed to fetch posts'
+    console.error('Error fetching posts:', err)
+  }
+}
+
+onMounted(() => {
+  fetchPosts()
+})
+</script>
 <template>
   <div class="container text-center">
     <div class="row">
@@ -21,7 +46,15 @@
       GÖNDERİLERİN LİSTENECEĞİ YER
       -->
         <br />
-        <Post></Post>
+
+        <div>
+          <div v-if="errorMessage">{{ errorMessage }}</div>
+          <div v-else-if="posts.length === 0">Loading...</div>
+          <template v-else v-for="post in posts" :key="post._id">
+            <Post :post="post"></Post>
+          </template>
+        </div>
+
         <br />
       </div>
       <div class="col">
@@ -30,10 +63,6 @@
     </div>
   </div>
 </template>
-<script setup>
-import Sidebar from '/src/components/sidebarItem.vue'
-import Post from '/src/components/postItem.vue'
-</script>
 
 <style scoped>
 .card {

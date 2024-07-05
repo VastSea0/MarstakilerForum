@@ -7,6 +7,7 @@ export const authentication = {
       await store.attempt()
       return
     } catch (error) {
+      console.log(error)
       return
     }
   }
