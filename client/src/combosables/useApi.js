@@ -27,6 +27,7 @@ export function useApiPrivate() {
             prevRequest.headers['Authorization'] = `Bearer ${authStore.accessToken}`
             return await axiosPrivateInstance(prevRequest)
           } catch (err) {
+            await authStore.logout()
             return Promise.reject(err)
           }
         }

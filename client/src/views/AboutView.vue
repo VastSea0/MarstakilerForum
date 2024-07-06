@@ -9,7 +9,7 @@
         <div class="row">
           <div class="card">
             <h5 class="card-header">miniForum/Hakkımızda</h5>
-            <div class="card-body" style="">
+            <div class="card-body">
               <h1>🚀 Marstakiler Forumu 🌌</h1>
 
               <p>
@@ -60,25 +60,6 @@
           </div>
         </div>
       </div>
-      <div class="col-4">
-        <Sidebar></Sidebar>
-      </div>
     </div>
   </div>
 </template>
-
-<script setup>
-import Sidebar from '/src/components/sidebarItem.vue'
-</script>
-
-<style scoped>
-.links {
-  margin-top: 20px;
-}
-.links a {
-  display: inline-block;
-  margin-right: 10px;
-  text-decoration: none;
-  color: #007bff;
-}
-</style>

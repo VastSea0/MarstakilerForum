@@ -17,6 +17,7 @@ const errorMessage = ref('')
 async function submit() {
   try {
     await authStore.login(loginData)
+    await authStore.getUser()
     router.push('/')
   } catch (err) {
     errorMessage.value = err.response?.data?.message || err.message || 'Login failed'

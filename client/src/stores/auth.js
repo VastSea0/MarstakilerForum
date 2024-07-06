@@ -71,6 +71,7 @@ export const useAuthStore = defineStore('auth', () => {
       accessToken.value = ''
       user.value = {}
       authReady.value = false
+      console.log('çıkış yapıldı')
       return data
     } catch (error) {
       handleError(error, 'Failed to logout')

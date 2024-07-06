@@ -23,6 +23,7 @@ export const useTopicsStore = defineStore('topic', () => {
   const getAllTopics = async () => {
     try {
       const { data } = await api.get('/topics')
+      console.log('ALL TOPİCS: ', data)
       topics.value = data.data || data // API yanıtınızın yapısına göre ayarlayın
       return topics.value
     } catch (error) {
@@ -50,33 +51,43 @@ export const useTopicsStore = defineStore('topic', () => {
     }
   }
 
-  const likeTopic = async (id) => {
+  const actionTopic = async (action, id) => {
     try {
-      const { data } = await api.post(`/topics/like/${id}`)
-      await getTopic(id) // Topic'i yeniden getir
+      const { data } = await api.post(`/topics/${action}/${id}`)
+
+      // Sadece ilgili alanları güncelle
+      const updatedFields = {
+        likeCount: data.likeCount,
+        dislikeCount: data.dislikeCount
+      }
+
+      // topics dizisini ve topic nesnesini güncelle
+      updateTopicInStore(id, updatedFields)
+
       return data
     } catch (error) {
-      handleError(error, 'Failed to like topic')
+      handleError(error, 'Failed to perform action on topic')
     }
   }
 
-  const dislikeTopic = async (id) => {
-    try {
-      const { data } = await api.post(`/topics/dislike/${id}`)
-      await getTopic(id) // Topic'i yeniden getir
-      return data
-    } catch (error) {
-      handleError(error, 'Failed to dislike topic')
+  const updateTopicInStore = (id, updatedFields) => {
+    // topics dizisini güncelle
+    const indexTopic = topics.value.findIndex((t) => t._id === id)
+    if (indexTopic !== -1) {
+      topics.value[indexTopic] = { ...topics.value[indexTopic], ...updatedFields }
+    }
+
+    // Eğer güncel topic bu ise, onu da güncelle
+    if (topic.value._id === id) {
+      topic.value = { ...topic.value, ...updatedFields }
     }
   }
-
   return {
     topics,
     topic,
     getAllTopics,
     getTopic,
     deleteTopic,
-    likeTopic,
-    dislikeTopic
+    actionTopic
   }
 })

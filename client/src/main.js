@@ -1,4 +1,3 @@
-import '@fortawesome/fontawesome-free/css/all.min.css'
 import '@/assets/main.css'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
