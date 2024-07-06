@@ -116,12 +116,14 @@ export const getTopic = async (req, res, next) => {
             _id: topic._id,
             title: topic.title,
             content: topic.content,
+            authorId: topic.author.id,
             author: topic.author.username,
             comments: topic.comments,
             commentCount,
             likeCount,
             dislikeCount,
         };
+        console.log(topicData);
         res.status(200).json({
             success: true,
             message: "Gönderi bilgileri başarılı bir şekilde alındı",

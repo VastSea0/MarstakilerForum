@@ -29,7 +29,7 @@ export const requireAuth = (req, res, next) => {
     if (req.user) {
         return next();
     } else {
-        return res.status(401).json({
+        return res.status(403).json({
             success: false,
             errors: "Lütfen giriş yapınız",
         });

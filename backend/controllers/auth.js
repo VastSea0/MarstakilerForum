@@ -165,6 +165,7 @@ export const getUserProfile = async (req, res, next) => {
         }
 
         const topics = await Topic.find({ author: user._id }).lean();
+        console.log("\n\n\nUser Profile Topics: ", topics);
 
         const userProfile = {
             user: {
