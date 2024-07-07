@@ -2,9 +2,9 @@ import mongoose from "mongoose";
 
 const db = () => {
     mongoose
-        .connect("mongodb://localhost:27017/miniForum")
+        .connect(process.env.DB_URL)
         .then(() => {
-            console.log("Veritabanı bağlantısı başarılı"); // bişey olmaz
+            console.log("Veritabanı bağlantısı başarılı");
         })
         .catch((err) => {
             console.error(

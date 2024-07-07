@@ -12,7 +12,7 @@ db();
 const app = e();
 app.use(
     cors({
-        origin: "http://localhost:5173",
+        origin: process.env.ORIGIN,
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE"],
         allowedHeaders: ["Content-Type", "Authorization"],
@@ -30,8 +30,9 @@ app.use(authenticate);
 app.use("/auth", authRouter);
 app.use("/topics", topicRouter);
 app.use("/comments", commentRouter);
+
 app.use((err, req, res, next) => {
-    console.error(err); // Hata detaylarını loglayın
+    console.error(err);
     if (!res.headersSent) {
         res.status(err.status || 500).json({
             success: false,
@@ -39,6 +40,9 @@ app.use((err, req, res, next) => {
         });
     }
 });
-app.listen(4000, () => {
+
+const port = process.env.PORT || 4000;
+
+app.listen(port, () => {
     console.log("Sunucu 4000 portu üzerinde başlatıldı");
 });

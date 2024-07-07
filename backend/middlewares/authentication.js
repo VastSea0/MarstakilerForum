@@ -1,4 +1,3 @@
-import User from "../models/user.js";
 import jwt from "jsonwebtoken";
 
 export const authenticate = async (req, res, next) => {
@@ -15,7 +14,7 @@ export const authenticate = async (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, "secret-key");
+        const decoded = jwt.verify(token, process.env.ACCESS_SECRET_KEY);
         req.user = decoded.userData;
         next();
     } catch (error) {
@@ -46,17 +45,21 @@ export const notAuth = (req, res, next) => {
     }
     const refreshToken = req.cookies.refreshToken;
     if (refreshToken) {
-        jwt.verify(refreshToken, "secret-key", (err, decoded) => {
-            if (err) {
-                return next();
-            } else {
-                console.log("satır 53, decoded user: ", decoded.userData);
-                return res.status(409).json({
-                    success: false,
-                    errors: "Zaten giriş yapılmış",
-                });
+        jwt.verify(
+            refreshToken,
+            process.env.REFRESH_SECRET_KEY,
+            (err, decoded) => {
+                if (err) {
+                    return next();
+                } else {
+                    console.log("satır 53, decoded user: ", decoded.userData);
+                    return res.status(409).json({
+                        success: false,
+                        errors: "Zaten giriş yapılmış",
+                    });
+                }
             }
-        });
+        );
     } else {
         return next();
     }
@@ -75,22 +78,26 @@ export const checkRefreshTokenMiddleware = async (req, res, next) => {
             });
         }
 
-        jwt.verify(refreshToken, "secret-key", (err, decoded) => {
-            if (err) {
-                return res.status(403).json({
-                    success: false,
-                    errors: "Geçersiz oturum çerezi",
-                });
+        jwt.verify(
+            refreshToken,
+            process.env.REFRESH_SECRET_KEY,
+            (err, decoded) => {
+                if (err) {
+                    return res.status(403).json({
+                        success: false,
+                        errors: "Geçersiz oturum çerezi",
+                    });
+                }
+                req.user = decoded.userData;
+                return next();
             }
-            req.user = decoded.userData;
-            return next();
-        });
+        );
     } else {
         // Eğer authHeader varsa, yani access token varsa
         // Sadece uyarı ver ve devam et
         return res.status(403).json({
             success: false,
-            errors: "Mevcut tokenin süresinin bitmesini bekleyin lütfen",
+            errors: "Mevcut token süresinin bitmesini bekleyin lütfen",
         });
     }
 };

@@ -60,8 +60,16 @@ export const login = async (req, res, next) => {
             username: user.username,
         };
 
-        const accessToken = generateToken(userData, "1h");
-        const refreshToken = generateToken(userData, "30d");
+        const accessToken = generateToken(
+            userData,
+            process.env.ACCESS_SECRET_KEY,
+            "1h"
+        );
+        const refreshToken = generateToken(
+            userData,
+            process.env.REFRESH_SECRET_KEY,
+            "30d"
+        );
 
         return res
             .cookie("refreshToken", refreshToken, {
@@ -115,20 +123,24 @@ export const refreshToken = async (req, res, next) => {
                 errors: "Oturum çerezi bulunamadı",
             });
         }
-        Jwt.verify(refreshToken, "secret-key", (err, decoded) => {
-            if (err) {
-                return res.status(400).json({
-                    success: false,
-                    errors: "Geçersiz oturum çerezi",
+        Jwt.verify(
+            refreshToken,
+            process.env.REFRESH_SECRET_KEY,
+            (err, decoded) => {
+                if (err) {
+                    return res.status(400).json({
+                        success: false,
+                        errors: "Geçersiz oturum çerezi",
+                    });
+                }
+                const accessToken = generateToken(decoded.userData, "1h");
+                return res.status(200).json({
+                    success: true,
+                    token: accessToken,
+                    data: decoded.userData,
                 });
             }
-            const accessToken = generateToken(decoded.userData, "1h");
-            return res.status(200).json({
-                success: true,
-                token: accessToken,
-                data: decoded.userData,
-            });
-        });
+        );
     } catch (error) {
         return next(error);
     }
