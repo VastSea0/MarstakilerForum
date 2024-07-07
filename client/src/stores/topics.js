@@ -3,49 +3,45 @@ import { ref } from 'vue'
 import { useApiPrivate } from '@/combosables/useApi'
 
 const handleError = (error, defaultMessage) => {
-  if (error.response) {
-    console.error('Server error:', error.response.data)
-    throw new Error(error.response.data.message || defaultMessage)
-  } else if (error.request) {
-    console.error('No response:', error.request)
-    throw new Error('No response from server')
-  } else {
-    console.error('Error:', error.message)
-    throw error
-  }
+  console.error(defaultMessage, error)
+  throw error.response?.data?.message || error.message || defaultMessage
 }
 
 export const useTopicsStore = defineStore('topic', () => {
   const topics = ref([])
   const topic = ref({})
+  const topicsByUser = ref([])
   const api = useApiPrivate()
 
-  const getAllTopics = async () => {
+  const fetchTopics = async (url) => {
     try {
-      const { data } = await api.get('/topics')
-      console.log('ALL TOPİCS: ', data)
-      topics.value = data.data || data // API yanıtınızın yapısına göre ayarlayın
-      return topics.value
+      const { data } = await api.get(url)
+      return data.data || data
     } catch (error) {
-      handleError(error, 'Failed to fetch topics')
+      handleError(error, `Failed to fetch from ${url}`)
     }
   }
 
+  const getAllTopics = async () => {
+    topics.value = await fetchTopics('/topics')
+    return topics.value
+  }
+
+  const getTopicsByUser = async (userId) => {
+    await getAllTopics()
+    topicsByUser.value = topics.value.filter((t) => t.author === userId)
+    return topicsByUser.value
+  }
+
   const getTopic = async (id) => {
-    try {
-      const { data } = await api.get(`/topics/${id}`)
-      topic.value = data.data || data
-      return topic.value
-    } catch (error) {
-      handleError(error, 'Failed to fetch topic')
-    }
+    topic.value = await fetchTopics(`/topics/${id}`)
+    return topic.value
   }
 
   const deleteTopic = async (id) => {
     try {
-      const { data } = await api.delete(`/topics/${id}`)
-      topics.value = topics.value.filter((t) => t.id !== id)
-      return data
+      await api.delete(`/topics/${id}`)
+      topics.value = topics.value.filter((t) => t._id !== id)
     } catch (error) {
       handleError(error, 'Failed to delete topic')
     }
@@ -53,41 +49,89 @@ export const useTopicsStore = defineStore('topic', () => {
 
   const actionTopic = async (action, id) => {
     try {
-      const { data } = await api.post(`/topics/${action}/${id}`)
-
-      // Sadece ilgili alanları güncelle
-      const updatedFields = {
-        likeCount: data.likeCount,
-        dislikeCount: data.dislikeCount
-      }
-
-      // topics dizisini ve topic nesnesini güncelle
-      updateTopicInStore(id, updatedFields)
-
-      return data
+      await api.post(`/topics/${action}/${id}`)
+      updateTopicInStore(id, action)
     } catch (error) {
-      handleError(error, 'Failed to perform action on topic')
+      handleError(error, `Failed to ${action} topic`)
     }
   }
 
-  const updateTopicInStore = (id, updatedFields) => {
-    // topics dizisini güncelle
-    const indexTopic = topics.value.findIndex((t) => t._id === id)
-    if (indexTopic !== -1) {
-      topics.value[indexTopic] = { ...topics.value[indexTopic], ...updatedFields }
+  const updateTopicInStore = (id, action) => {
+    const updateTopic = (t) => {
+      if (t._id !== id) return t
+      const newTopic = { ...t }
+      const isLike = action === 'like'
+      const countKey = isLike ? 'likeCount' : 'dislikeCount'
+      const oppositeKey = isLike ? 'dislikeCount' : 'likeCount'
+
+      if (newTopic[countKey] === 0) {
+        newTopic[countKey] = 1
+        if (newTopic[oppositeKey] > 0) newTopic[oppositeKey] -= 1
+      } else {
+        newTopic[countKey] = 0
+      }
+      return newTopic
     }
 
-    // Eğer güncel topic bu ise, onu da güncelle
-    if (topic.value._id === id) {
-      topic.value = { ...topic.value, ...updatedFields }
+    topics.value = topics.value.map(updateTopic)
+    if (topic.value._id === id) topic.value = updateTopic(topic.value)
+  }
+
+  const actionComment = async (action, commentId) => {
+    try {
+      await api.post(`/comments/${action}/${commentId}`)
+      updateCommentInStore(commentId, action)
+    } catch (error) {
+      handleError(error, `Failed to ${action} comment`)
+    }
+  }
+
+  const updateCommentInStore = (commentId, action) => {
+    const updateComment = (c) => {
+      if (c._id !== commentId) return c
+      const newComment = { ...c }
+      const isLike = action === 'like'
+      const countKey = isLike ? 'likeCount' : 'dislikeCount'
+      const oppositeKey = isLike ? 'dislikeCount' : 'likeCount'
+
+      if (newComment[countKey] === 0) {
+        newComment[countKey] = 1
+        if (newComment[oppositeKey] > 0) newComment[oppositeKey] -= 1
+      } else {
+        newComment[countKey] = 0
+      }
+      return newComment
+    }
+
+    if (topic.value.comments) {
+      topic.value.comments = topic.value.comments.map(updateComment)
+    }
+  }
+  const addComment = async (topicId, content) => {
+    try {
+      const { data } = await api.post(`/comments/${topicId}`, { content: String(content) })
+      if (data.success && data.comment && topic.value._id === topicId) {
+        topic.value = {
+          ...topic.value,
+          comments: [...(topic.value.comments || []), data.comment],
+          commentCount: (topic.value.commentCount || 0) + 1
+        }
+      }
+      return data.comment
+    } catch (error) {
+      handleError(error, 'Failed to add comment')
     }
   }
   return {
     topics,
+    topicsByUser,
     topic,
     getAllTopics,
+    getTopicsByUser,
     getTopic,
     deleteTopic,
-    actionTopic
+    actionTopic,
+    actionComment,
+    addComment
   }
 })

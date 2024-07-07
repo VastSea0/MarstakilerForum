@@ -12,6 +12,7 @@ const posts = computed(() => topicStore.topics)
 const fetchPosts = async () => {
   try {
     await topicStore.getAllTopics()
+    console.log(posts)
     // getAllTopics fonksiyonu artık posts'u doğrudan store'da güncelleyecek
   } catch (err) {
     errorMessage.value = err.message || 'Failed to fetch posts'
@@ -32,7 +33,9 @@ onMounted(() => {
   <template v-else-if="posts.length === 0">
     <div>Loading...</div>
   </template>
-  <div v-else class="py-5">
+  <div v-else>
+    <h4 class="text-2xl font-semibold mb-3">Posts</h4>
+
     <template v-for="post in posts" :key="post._id">
       <Post :post="post"></Post>
     </template>

@@ -6,7 +6,7 @@ import { useTopicsStore } from '@/stores/topics'
 const topicStore = useTopicsStore()
 const authStore = useAuthStore()
 const props = defineProps({
-  post: {
+  comment: {
     type: Object,
     required: true
   }
@@ -14,7 +14,7 @@ const props = defineProps({
 
 const submit = async (action, id) => {
   try {
-    await topicStore.actionTopic(action, id)
+    await topicStore.actionComment(action, id)
   } catch (error) {
     console.error('Error fetching action:', error.message)
   }
@@ -24,39 +24,31 @@ const submit = async (action, id) => {
 <template>
   <div class="card card-compact bg-neutral text-primary-content mb-2">
     <div class="card-body">
-      <h2 class="card-title">
-        <RouterLink :to="{ name: 'topic', params: { id: props.post._id } }"
-          ><span class="mr-1">📌</span>{{ props.post.title }}</RouterLink
-        >
-      </h2>
+      <h2 class="card-title"><span class="mr-1">💬</span>{{ props.comment.content }}</h2>
       <p class="font-medium text-base">
-        <RouterLink :to="{ name: 'profile', params: { id: props.post.author._id } }"
-          >@{{ props.post.author.username }}</RouterLink
+        <RouterLink :to="{ name: 'profile', params: { id: props.comment.author._id } }"
+          >@{{ props.comment.author.username }}</RouterLink
         >
       </p>
       <div class="card-actions">
-        <form @submit.prevent="submit('like', props.post._id)">
+        <form @submit.prevent="submit('like', props.comment._id)">
           <button
             type="submit"
             :class="authStore.isAuthenticated ? '' : 'btn-disabled'"
             class="btn btn-outline btn-sm"
           >
-            👍 {{ props.post.likeCount }}
+            👍 {{ props.comment.likeCount }}
           </button>
         </form>
-        <form @submit.prevent="submit('dislike', props.post._id)">
+        <form @submit.prevent="submit('dislike', props.comment._id)">
           <button
             type="submit"
             :class="authStore.isAuthenticated ? '' : 'btn-disabled'"
             class="btn btn-outline btn-sm"
           >
-            👎 {{ props.post.dislikeCount }}
+            👎 {{ props.comment.dislikeCount }}
           </button>
         </form>
-
-        <button class="btn btn-outline btn-disabled btn-sm">
-          💬 {{ props.post.commentCount }}
-        </button>
       </div>
     </div>
   </div>

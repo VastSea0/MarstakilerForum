@@ -1,62 +1,46 @@
 <script setup>
 import { RouterLink } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { toRaw } from 'vue'
-
-const authStore = useAuthStore()
-import { onMounted, watch } from 'vue'
-
-// Debug: authStore'in doğru şekilde yüklendiğinden emin olun
-console.log('authStore:', authStore)
-
-watch(
-  () => authStore.isAuthenticated,
-  (newVal) => {
-    console.log('isAuthenticated changed:', newVal)
-  },
-  { immediate: true }
-)
-
-watch(
-  () => authStore.user,
-  (newVal) => {
-    console.log('user changed:', newVal)
-  },
-  { immediate: true }
-)
-
-onMounted(() => {
-  console.log('Mounted: authStore isAuthenticated:', authStore.isAuthenticated)
-  console.log('Mounted: authStore.user:', toRaw(authStore.user))
-})
+import NavbarMenuItems from '@/components/navbarMenuItem.vue'
 </script>
+
 <template>
   <div class="navbar bg-base-100">
-    <div class="flex-1">
-      <RouterLink class="btn btn-ghost text-xl" to="/">Marslılar</RouterLink>
+    <div class="navbar-start">
+      <div class="dropdown dropdown-hover">
+        <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6h16M4 12h8m-8 6h16"
+            />
+          </svg>
+        </div>
+        <ul
+          tabindex="0"
+          class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow"
+        >
+          <NavbarMenuItems></NavbarMenuItems>
+        </ul>
+      </div>
+      <div class="flex-1">
+        <RouterLink class="btn btn-ghost text-xl" to="/">👽 Marslılar</RouterLink>
+      </div>
     </div>
-    <div class="flex-none">
-      <ul class="menu menu-horizontal px-1">
-        <li><RouterLink to="/about">Hakkımızda</RouterLink></li>
-        <template v-if="authStore.isAuthenticated">
-          <li>
-            <RouterLink
-              v-if="authStore.user && authStore.user.id"
-              class="dropdown-item"
-              :to="{ name: 'profile', params: { id: authStore.user.id } }"
-              >Profil</RouterLink
-            >
-          </li>
-        </template>
-        <template v-else>
-          <li>
-            <RouterLink to="/login">Giriş yap</RouterLink>
-          </li>
-          <li>
-            <RouterLink to="/register">Kayıt ol</RouterLink>
-          </li>
-        </template>
-      </ul>
+    <div class="navbar-center hidden lg:flex"></div>
+    <div class="navbar-end">
+      <div class="hidden lg:flex">
+        <ul class="menu menu-horizontal gap-2">
+          <NavbarMenuItems></NavbarMenuItems>
+        </ul>
+      </div>
     </div>
   </div>
 </template>

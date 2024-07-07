@@ -67,7 +67,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async () => {
     try {
-      const { data } = await useApiPrivate().post('/auth/logout')
+      const { data } = await useApiPrivate().delete('/auth/logout')
       accessToken.value = ''
       user.value = {}
       authReady.value = false
@@ -91,6 +91,16 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const updateProfile = async (userId, payload) => {
+    try {
+      const { data } = await useApiPrivate().put(`/auth/user/${userId}`, payload)
+      console.log('updated profile data: ', data)
+      return data
+    } catch (error) {
+      handleError(error, 'Failed to update profile')
+    }
+  }
+
   return {
     user,
     accessToken,
@@ -102,6 +112,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     getUser,
     logout,
-    refresh
+    refresh,
+    updateProfile
   }
 })
