@@ -26,17 +26,10 @@ import authRouter from "./routers/auth.js";
 import topicRouter from "./routers/topic.js";
 import commentRouter from "./routers/comment.js";
 import { authenticate } from "./middlewares/authentication.js";
-
-app.use((req, res, next) => {
-    console.log("GELEN REQ BODY: ", JSON.stringify(req.body));
-    console.log("GELEN REQ HEADER: ", JSON.stringify(req.headers));
-    next();
-});
-
 app.use(authenticate);
 app.use("/auth", authRouter);
 app.use("/topics", topicRouter);
-app.use("/comment", commentRouter);
+app.use("/comments", commentRouter);
 app.use((err, req, res, next) => {
     console.error(err); // Hata detaylarını loglayın
     if (!res.headersSent) {

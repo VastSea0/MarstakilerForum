@@ -5,6 +5,7 @@ import {
     checkRefreshTokenMiddleware,
     requireAuth,
     notAuth,
+    checkUserId,
 } from "../middlewares/authentication.js";
 
 import existUser from "../middlewares/existUser.js";
@@ -15,5 +16,6 @@ router.delete("/logout", requireAuth, auth.logout);
 router.get("/token", checkRefreshTokenMiddleware, auth.refreshToken);
 router.get("/user", requireAuth, auth.getUser);
 router.get("/user/:id", requireAuth, auth.getUserProfile);
+router.put("/user/:id", requireAuth, checkUserId, auth.updateUserProfile);
 
 export default router;

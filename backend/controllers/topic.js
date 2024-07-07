@@ -1,4 +1,5 @@
 import Topic from "../models/topic.js";
+import Comment from "../models/comment.js";
 import likeTopic from "../helpers/likeTopic.js";
 import dislikeTopic from "../helpers/dislikeTopic.js";
 import mongoose from "mongoose";
@@ -38,29 +39,32 @@ export const getAllTopic = async (req, res, next) => {
                 {
                     $unwind: "$authorDetails",
                 },
+                // Yorumlar için lookup işlemi
+                {
+                    $lookup: {
+                        from: "comments", // comments koleksiyonu
+                        localField: "_id", // topics koleksiyonundaki alan
+                        foreignField: "topic", // comments koleksiyonundaki alan
+                        as: "comments", // birleştirilen veri için alias
+                    },
+                },
                 // Gruplama işlemi yaparak like, dislike ve yorum sayılarını toplayalım
                 {
-                    $group: {
-                        _id: "$_id", // topic id'ye göre grupla
-                        title: { $first: "$title" },
-                        content: { $first: "$content" },
-                        author: { $first: "$author" },
-                        authorName: { $first: "$authorDetails.username" },
-                        likeCount: {
-                            $sum: { $size: { $ifNull: ["$likes", []] } },
-                        },
-                        dislikeCount: {
-                            $sum: { $size: { $ifNull: ["$dislikes", []] } },
-                        },
-                        commentCount: {
-                            $sum: { $size: { $ifNull: ["$comments", []] } },
-                        },
-                        createdAt: { $first: "$createdAt" },
+                    $project: {
+                        _id: 1,
+                        title: 1,
+                        content: 1,
+                        "author._id": "$authorDetails._id",
+                        "author.username": "$authorDetails.username",
+                        likeCount: { $size: "$likes" },
+                        dislikeCount: { $size: "$dislikes" },
+                        commentCount: { $size: "$comments" },
+                        createdAt: 1,
                     },
                 },
                 // Kullanıcı tarafından belirtilen alana göre sıralama yapalım
                 { $sort: sortStage },
-            ]);
+            ]).exec(); // .exec() çağrısı ile sorguyu yürütün ve lean kullanın
 
             if (topics.length === 0) {
                 return res.status(404).json({
@@ -84,19 +88,14 @@ export const getAllTopic = async (req, res, next) => {
         return next(error);
     }
 };
+
 export const getTopic = async (req, res, next) => {
     const { id } = req.params;
     try {
+        // Topic'i yazar bilgileriyle birlikte bulun
         const topic = await Topic.findById(id)
-            .populate("author", "username") // Yazar bilgisini al, sadece kullanıcı adını al
-            .populate({
-                path: "comments",
-                select: "content user createdAt",
-                populate: {
-                    path: "user",
-                    select: "username",
-                }, // Yorum yapan kullanıcının sadece kullanıcı adını al
-            });
+            .populate("author", "username") // Yazar bilgilerini populate edin
+            .lean();
 
         if (!topic) {
             return res.status(404).json({
@@ -105,29 +104,29 @@ export const getTopic = async (req, res, next) => {
             });
         }
 
-        // Yorum sayısını hesapla
-        const commentCount = topic.comments.length;
+        // Yorumları ayrıca çekin
+        const comments = await Comment.find({ topic: id })
+            .populate("author", "username")
+            .lean();
 
-        // Like ve dislike sayılarını hesapla
-        const likeCount = topic.likes.length;
-        const dislikeCount = topic.dislikes.length;
+        // Her yorum için likeCount ve dislikeCount hesaplayın
+        for (let comment of comments) {
+            comment.likeCount = comment.likes.length;
+            comment.dislikeCount = comment.dislikes.length;
+        }
 
-        const topicData = {
-            _id: topic._id,
-            title: topic.title,
-            content: topic.content,
-            authorId: topic.author.id,
-            author: topic.author.username,
-            comments: topic.comments,
-            commentCount,
-            likeCount,
-            dislikeCount,
-        };
-        console.log(topicData);
+        // Topic'in likeCount ve dislikeCount değerlerini hesaplayın
+        topic.likeCount = topic.likes.length;
+        topic.dislikeCount = topic.dislikes.length;
+
+        // Topic nesnesine yorumları, yorum sayısını, likeCount ve dislikeCount'u ekleyin
+        topic.comments = comments;
+        topic.commentCount = comments.length;
+
         res.status(200).json({
             success: true,
             message: "Gönderi bilgileri başarılı bir şekilde alındı",
-            data: topicData,
+            data: topic,
         });
     } catch (error) {
         console.error("Hata:", error);

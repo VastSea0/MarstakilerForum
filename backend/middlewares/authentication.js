@@ -107,3 +107,13 @@ export const authrole = (...roles) => {
         }
     };
 };
+
+export const checkUserId = (req, res, next) => {
+    if (req.user.id !== req.params.id) {
+        return res.status(403).json({
+            success: false,
+            message: "Yetkisiz erişim",
+        });
+    }
+    return next();
+};

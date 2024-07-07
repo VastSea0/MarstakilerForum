@@ -79,6 +79,7 @@ export const login = async (req, res, next) => {
         next(error);
     }
 };
+
 export const logout = async (req, res, next) => {
     try {
         const cookies = req.cookies;
@@ -91,8 +92,9 @@ export const logout = async (req, res, next) => {
             });
         res.clearCookie("refreshToken", {
             httpOnly: true,
-            sameSite: "None",
+            sameSite: "Strict",
             secure: false,
+            path: "/", // ! önemliymişşş
         });
         return res.status(200).json({
             success: true,
@@ -166,6 +168,19 @@ export const getUserProfile = async (req, res, next) => {
 
         const topics = await Topic.find({ author: user._id }).lean();
         console.log("\n\n\nUser Profile Topics: ", topics);
+        const filteredTopics = topics.map((topic) => {
+            return {
+                _id: topic._id,
+                title: topic.title,
+                content: topic.content,
+                author: topic.author,
+                authorName: user.username,
+                commentCount: topic.comments.length,
+                likeCount: topic.likes.length,
+                dislikeCount: topic.dislikes.length,
+                createdAt: topic.createdAt,
+            };
+        });
 
         const userProfile = {
             user: {
@@ -175,15 +190,37 @@ export const getUserProfile = async (req, res, next) => {
                 username: user.username,
                 role: user.role,
             },
-            topics,
+            topics: filteredTopics,
         };
 
+        console.log("User Profile Topics: ", userProfile.topics);
         return res.status(200).json({
             success: true,
             message:
                 "Profil bilgileri ve gönderiler başarılı bir şekilde alındı",
             data: userProfile,
         });
+    } catch (error) {
+        return next(error);
+    }
+};
+
+export const updateUserProfile = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const updateData = req.body;
+        const updatedUser = await User.findByIdAndUpdate(userId, updateData);
+        if (updatedUser) {
+            return res.status(200).json({
+                success: true,
+                message: "Profil başarılı bir şekilde güncellendi",
+            });
+        } else {
+            return res.status(400).json({
+                success: false,
+                errors: "Profil güncellenemedi",
+            });
+        }
     } catch (error) {
         return next(error);
     }
