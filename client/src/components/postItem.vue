@@ -14,7 +14,7 @@ const props = defineProps({
 
 const submit = async (action, id) => {
   try {
-    await topicStore.actionTopic(action, id)
+    await topicStore.actionTopic(action, id, authStore.user.id)
   } catch (error) {
     console.error('Error fetching action:', error.message)
   }

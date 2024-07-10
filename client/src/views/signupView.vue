@@ -1,8 +1,11 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
-import { reactive, ref } from 'vue'
+import { useErrorStore } from '@/stores/error'
+import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import ErrorRegister from '@/components/notFoundMessageItem.vue'
 const authStore = useAuthStore()
+const errorStore = useErrorStore()
 const router = useRouter()
 const registerData = reactive({
   firstName: '',
@@ -11,21 +14,17 @@ const registerData = reactive({
   password: ''
 })
 
-const errorMessage = ref('')
-
 async function submit() {
-  try {
-    await authStore.register(registerData)
-    router.replace({ name: 'login' })
-  } catch (err) {
-    errorMessage.value = err.response?.data?.message || err.message || 'Login failed'
-    console.error('Login error:', err)
+  const data = await authStore.register(registerData)
+  console.log(data)
+  if (data) {
+    router.push('/login')
   }
 }
 </script>
 <template>
   <h4 class="text-2xl font-semibold mb-3">📝 Register</h4>
-  <div class="card card-compact bg-neutral">
+  <div class="card card-compact bg-neutral mb-4">
     <div class="card-body">
       <form @submit.prevent="submit" autocomplete="off">
         <div class="flex flex-col gap-2">
@@ -113,7 +112,6 @@ async function submit() {
                   name="password"
                   v-model="registerData.password"
                   id="password"
-                  required
                   autocomplete="new-password"
                 />
               </label>
@@ -126,4 +124,5 @@ async function submit() {
       </form>
     </div>
   </div>
+  <ErrorRegister v-if="errorStore.error" :message="errorStore.error"></ErrorRegister>
 </template>

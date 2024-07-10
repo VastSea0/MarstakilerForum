@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { useTopicsStore } from '@/stores/topics'
 import { useAuthStore } from '@/stores/auth'
 import Comment from '@/components/commentItem.vue'
+import NotComment from '@/components/notFoundMessageItem.vue'
 
 const route = useRoute()
 const topicStore = useTopicsStore()
@@ -46,10 +47,10 @@ onMounted(async () => {
 
 <template>
   <div v-if="errorMessage">{{ errorMessage }}</div>
-  <div v-else-if="!post.title">Loading...</div>
+  <div v-else-if="!post.title">Yükleniyor...</div>
   <div v-else>
     <div>
-      <h4 class="text-2xl font-semibold mb-3">Post</h4>
+      <h4 class="text-2xl font-semibold mb-3">Gönderi</h4>
       <div class="card card-compact bg-neutral text-primary-content">
         <div class="card-body">
           <h2 class="card-title">
@@ -91,14 +92,14 @@ onMounted(async () => {
       </div>
     </div>
     <div class="mt-8">
-      <h4 class="text-2xl font-semibold mb-3">Add Comment</h4>
+      <h4 class="text-2xl font-semibold mb-3">Yorum yaz</h4>
       <div class="card card-compact bg-neutral">
         <div class="card-body">
           <form @submit.prevent="addComment">
             <div>
               <label class="form-control">
                 <div class="label card-title">
-                  <span class="label-text">✍🏻 Comment</span>
+                  <span class="label-text">✍🏻 Yorum</span>
                 </div>
                 <textarea
                   v-model="commentContent"
@@ -108,24 +109,24 @@ onMounted(async () => {
               </label>
             </div>
             <div class="card-actions mt-2">
-              <button class="btn btn-sm">🚀 Send</button>
+              <button class="btn btn-sm">🚀 Gönder</button>
             </div>
           </form>
         </div>
       </div>
     </div>
     <div class="mt-8">
-      <h4 class="text-2xl font-semibold mb-3">Comments</h4>
+      <h4 class="text-2xl font-semibold mb-3">Yorumlar</h4>
       <div v-if="post.comments && post.comments.length > 0">
         <template v-for="comment in post.comments" :key="comment._id">
           <Comment :comment="comment"></Comment>
         </template>
       </div>
-      <div v-else class="card card-compact bg-neutral">
-        <div class="card-body">
-          <h2 class="card-title">No comments yet.</h2>
-        </div>
-      </div>
+      <NotComment
+        v-else
+        class="mt-2"
+        message="Bu gönderiye bir yorum yapılmadı henüz."
+      ></NotComment>
     </div>
   </div>
 </template>

@@ -1,34 +1,32 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
-import { reactive, ref } from 'vue'
+import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { useErrorStore } from '@/stores/error'
+import LoginError from '@/components/notFoundMessageItem.vue'
 
 const router = useRouter()
 
 const authStore = useAuthStore()
+const errorStore = useErrorStore()
 
 const loginData = reactive({
   username: '',
   password: ''
 })
 
-const errorMessage = ref('')
-
 async function submit() {
-  try {
-    await authStore.login(loginData)
-    await authStore.getUser()
+  await authStore.login(loginData)
+  await authStore.getUser()
+  if (authStore.authReady) {
     router.push('/')
-  } catch (err) {
-    errorMessage.value = err.response?.data?.message || err.message || 'Login failed'
-    console.error('Login error:', err)
   }
 }
 </script>
 
 <template>
   <h4 class="text-2xl font-semibold mb-3">🔑 Login</h4>
-  <div class="card card-compact bg-neutral">
+  <div class="card card-compact bg-neutral mb-4">
     <div class="card-body">
       <form @submit.prevent="submit" autocomplete="off">
         <div class="flex flex-col gap-2">
@@ -97,4 +95,5 @@ async function submit() {
       </form>
     </div>
   </div>
+  <LoginError v-if="errorStore.error" :message="errorStore.error"></LoginError>
 </template>

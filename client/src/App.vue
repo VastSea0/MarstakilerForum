@@ -11,5 +11,4 @@ import Navbar from '@/components/navbarItem.vue'
   <div class="container max-w-screen-md mx-auto p-2 md:p-4 lg:p-6">
     <RouterView />
   </div>
-  <footer></footer>
 </template>

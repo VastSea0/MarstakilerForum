@@ -30,8 +30,8 @@ import NavbarMenuItems from '@/components/navbarMenuItem.vue'
           <NavbarMenuItems></NavbarMenuItems>
         </ul>
       </div>
-      <div class="flex-1">
-        <RouterLink class="btn btn-ghost text-xl" to="/">👽 Marslılar</RouterLink>
+      <div class="flex">
+        <RouterLink class="btn btn-ghost text-xl" to="/">👽 Marstakiler</RouterLink>
       </div>
     </div>
     <div class="navbar-center hidden lg:flex"></div>

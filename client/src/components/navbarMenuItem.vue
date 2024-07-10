@@ -31,18 +31,18 @@ onMounted(() => {
 })
 </script>
 <template>
-  <li><RouterLink to="/about">🧐 About</RouterLink></li>
+  <li><RouterLink to="/about">🧐 Hakkımızda</RouterLink></li>
   <template v-if="authStore.isAuthenticated">
     <li>
       <RouterLink
         v-if="authStore.user && authStore.user.id"
         class="dropdown-item"
         :to="{ name: 'profile', params: { id: authStore.user.id } }"
-        >🧑 Profile</RouterLink
+        >🧑 Profil</RouterLink
       >
     </li>
     <li>
-      <button class="dropdown-item" @click="authStore.logout()">🚪 Logout</button>
+      <button class="dropdown-item" @click="authStore.logout()">🚪 Çıkış</button>
     </li>
   </template>
   <template v-else>

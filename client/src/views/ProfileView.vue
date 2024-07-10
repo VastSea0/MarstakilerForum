@@ -1,17 +1,20 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { getUserProfile } from '@/services/profiles/getProfile'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTopicsStore } from '@/stores/topics'
+import { useErrorStore } from '@/stores/error'
 import Post from '@/components/postItem.vue'
+import NotFound from '@/components/notFoundMessageItem.vue'
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const topicStore = useTopicsStore()
+const errorStore = useErrorStore()
 
 const userId = ref(route.params.id)
-const userProfile = ref(null)
+const userProfile = computed(() => authStore.userProfile)
 const originalProfile = ref(null)
 const userTopics = computed(() => topicStore.topics)
 const isLoading = ref(false)
@@ -23,37 +26,44 @@ const isOwnProfile = computed(() => {
 })
 
 const fetchUserProfile = async (id) => {
-  isLoading.value = true
-  try {
-    const profileData = await getUserProfile(id)
-    userProfile.value = profileData.user
-    originalProfile.value = profileData.user
-    await topicStore.getTopicsByUser(id)
-  } catch (error) {
-    console.error('Error fetching user profile:', error.message)
-    userProfile.value = null
-    notFound.value = true
-  } finally {
-    isLoading.value = false
+  if (authStore.isAuthenticated) {
+    isLoading.value = true
+    try {
+      await authStore.getUserProfile(id)
+      await topicStore.getTopicsByUser(id)
+      originalProfile.value = { ...userProfile.value }
+    } catch (error) {
+      console.error('Error fetching user profile:', error.message)
+      userProfile.value = null
+      notFound.value = true
+    } finally {
+      isLoading.value = false
+    }
+  } else {
+    // Kullanıcı hala giriş yapmamışsa, login sayfasına yönlendir
+    router.push('/login')
   }
 }
 
 const editProfile = () => {
   if (isOwnProfile.value) {
-    editable.value = !editable.value
+    originalProfile.value = { ...userProfile.value }
+    editable.value = true
   }
 }
 
 const cancelEdit = () => {
-  // Edit modu iptal edildiğinde, geçici olarak saklanan orijinal profili geri yükle
-  userProfile.value = { ...originalProfile.value }
+  authStore.setUserProfile({ ...originalProfile.value })
   editable.value = false
 }
+
 const saveProfile = async () => {
   if (isOwnProfile.value && editable.value) {
     const updatedProfile = {
       firstName: userProfile.value.firstName,
-      lastName: userProfile.value.lastName
+      lastName: userProfile.value.lastName,
+      bio: userProfile.value.bio
+      // Diğer güncellenebilir alanları buraya ekleyin
     }
     try {
       await authStore.updateProfile(userId.value, updatedProfile)
@@ -61,13 +71,12 @@ const saveProfile = async () => {
       await fetchUserProfile(userId.value) // Profil güncellendikten sonra yeni verileri çek
       console.log('Profile saved')
     } catch (error) {
-      console.log('Profile güncellenirken bir hata oluştu:', error.message)
+      console.error('Profile güncellenirken bir hata oluştu:', error.message)
     }
   }
 }
 
 onMounted(async () => {
-  await authStore.attempt() // Kullanıcı bilgilerini güncelle
   await fetchUserProfile(userId.value)
 })
 
@@ -77,11 +86,12 @@ watch(userId, (newVal) => {
 </script>
 
 <template>
-  <h4 class="text-2xl font-semibold mb-3">Profile</h4>
+  <NotFound v-if="notFound" message="Kullanıcı bulunamadı"></NotFound>
+  <h4 v-else class="text-2xl font-semibold mb-3">Profil Bilgileri</h4>
 
   <div v-if="isLoading" class="card card-compact bg-neutral">
-    <div class="card card-compact-body">
-      <h2 class="card-title">Loading...</h2>
+    <div class="card card-body">
+      <h2 class="card-title">Yükleniyor...</h2>
     </div>
   </div>
 
@@ -91,7 +101,7 @@ watch(userId, (newVal) => {
         <h3 class="card-title font-semibold">@{{ userProfile.username }}</h3>
         <div class="space-y-2">
           <div class="flex items-center gap-2">
-            <div class="font-bold">Name:</div>
+            <div class="font-bold">Ad:</div>
             <div>
               <span v-if="editable === false">
                 {{ userProfile.firstName }}
@@ -107,7 +117,7 @@ watch(userId, (newVal) => {
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <div class="font-bold">Surname:</div>
+            <div class="font-bold">Soyad:</div>
             <div>
               <span v-if="editable === false">
                 {{ userProfile.lastName }}
@@ -125,27 +135,27 @@ watch(userId, (newVal) => {
         </div>
         <div class="card-actions">
           <div v-if="isOwnProfile" class="mt-2 flex gap-2">
-            <button class="btn btn-sm" @click="editable ? cancelEdit() : editProfile()">
-              {{ editable ? 'Cancel' : 'Edit Profile' }}
+            <button
+              class="btn btn-sm"
+              @click="isOwnProfile && (editable ? cancelEdit() : editProfile())"
+            >
+              {{ editable ? 'İptal' : 'Profili Düzenle' }}
             </button>
-            <button v-if="editable" class="btn btn-sm" @click="saveProfile">Save</button>
+            <button v-if="editable" class="btn btn-sm" @click="saveProfile">Kaydet</button>
           </div>
         </div>
       </div>
     </div>
 
     <div class="mt-8">
-      <h4 class="text-2xl font-semibold mb-3">Posts</h4>
+      <h4 class="text-2xl font-semibold mb-3">Paylaşımlar</h4>
       <div class="space-y-4">
+        <NotFound v-if="errorStore.error" :message="errorStore.error"></NotFound>
+
         <div v-for="topic in userTopics" :key="topic._id">
           <Post :post="topic"></Post>
         </div>
       </div>
-    </div>
-  </div>
-  <div v-if="notFound" class="card card-compact bg-neutral">
-    <div class="card-body">
-      <h2 class="card-title">User Not Found</h2>
     </div>
   </div>
 </template>

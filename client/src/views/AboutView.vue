@@ -1,11 +1,11 @@
 <template>
-  <h4 class="text-2xl font-semibold mb-3">🛸 Marslılar</h4>
+  <h4 class="text-2xl font-semibold mb-3">🛸 Marstakiler</h4>
 
   <div class="card card-compact bg-neutral mt-8">
     <div class="card-body">
       <h2 class="card-title">👀 Biz kimiz ?</h2>
       <div>
-        <p>Marslılar forumu, Yazılım ve Linux tutkunları için bir buluşma noktasıdır.</p>
+        <p>Marstakiler forumu, Yazılım ve Linux tutkunları için bir buluşma noktasıdır.</p>
         <p>
           Egehan Kahraman ve Ahmet ilboga tarafından geliştirilen bu forum, teknolojiye ve bilgi
           paylaşımına adanmıştır
