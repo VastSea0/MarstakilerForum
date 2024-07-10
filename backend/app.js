@@ -18,10 +18,13 @@ const app = e();
 
 app.use(
     cors({
-        origin: process.env.ORIGIN,
-        credentials: true,
-        methods: ["GET", "POST", "PUT", "DELETE"],
+        origin: [
+            "https://marstakiler-forum.vercel.app/",
+            "http://localhost:3000/",
+        ],
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
+        credentials: true,
     })
 );
 app.use(e.json());
