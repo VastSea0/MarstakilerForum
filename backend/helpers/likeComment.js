@@ -7,17 +7,31 @@ const likeComment = async (userId, commentId) => {
             throw new Error("Böyle bir yorum yok");
         }
 
-        if (!comment.likes.includes(userId)) {
+        const likeIndex = comment.likes.indexOf(userId);
+        const dislikeIndex = comment.dislikes.indexOf(userId);
+
+        if (likeIndex !== -1) {
+            // Kullanıcı zaten like atmış, like'ı kaldır
+            comment.likes.splice(likeIndex, 1);
+            console.log("Like kaldırıldı");
+        } else {
+            // Kullanıcı like atmamış, like ekle
             comment.likes.push(userId);
-            const dislikeIndex = comment.dislikes.indexOf(userId);
+            console.log("Like eklendi");
+
+            // Eğer dislike varsa, onu kaldır
             if (dislikeIndex !== -1) {
                 comment.dislikes.splice(dislikeIndex, 1);
+                console.log("Var olan dislike kaldırıldı");
             }
-            await comment.save();
         }
+
+        console.log("Güncellenmiş yorum:", comment);
+        await comment.save();
         return comment;
     } catch (error) {
-        throw new Error("Bir hata oluştu");
+        console.error("likeComment fonksiyonunda hata:", error);
+        throw error;
     }
 };
 

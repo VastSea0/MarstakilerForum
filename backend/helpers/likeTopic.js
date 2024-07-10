@@ -5,27 +5,41 @@ const likeTopic = async (userId, topicId) => {
     try {
         const objectTopicId = new mongoose.Types.ObjectId(topicId);
         if (!mongoose.Types.ObjectId.isValid(objectTopicId)) {
-            console.log("Geçersiz Topic Id");
             throw new Error("Geçersiz topic ID");
         }
         const topic = await Topic.findById(topicId);
-        console.log(topic);
+
         if (!topic) {
-            console.log("Böyle bir konu yok");
             throw new Error("Böyle bir konu yok");
         }
-        if (!topic.likes.includes(userId)) {
-            topic.likes.push(userId);
 
-            const dislikeIndex = topic.dislikes.indexOf(userId);
+        console.log("Mevcut topic durumu:", topic);
+        console.log("İşlem yapan kullanıcı ID:", userId);
+
+        const likeIndex = topic.likes.indexOf(userId);
+        const dislikeIndex = topic.dislikes.indexOf(userId);
+
+        if (likeIndex !== -1) {
+            // Kullanıcı zaten like atmış, like'ı kaldır
+            topic.likes.splice(likeIndex, 1);
+            console.log("Like kaldırıldı");
+        } else {
+            // Kullanıcı like atmamış, like ekle
+            topic.likes.push(userId);
+            console.log("Like eklendi");
+
+            // Eğer dislike varsa, onu kaldır
             if (dislikeIndex !== -1) {
                 topic.dislikes.splice(dislikeIndex, 1);
+                console.log("Var olan dislike kaldırıldı");
             }
-            await topic.save();
-            return topic;
         }
+
+        console.log("Güncellenmiş topic:", topic);
+        await topic.save();
+        return topic;
     } catch (error) {
-        console.log("Bir hata oluştu: ", error);
+        console.error("likeTopic fonksiyonunda hata:", error);
         throw error;
     }
 };

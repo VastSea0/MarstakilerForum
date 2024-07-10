@@ -3,6 +3,8 @@ import Comment from "../models/comment.js";
 import likeTopic from "../helpers/likeTopic.js";
 import dislikeTopic from "../helpers/dislikeTopic.js";
 import mongoose from "mongoose";
+import sendResponse from "../helpers/sendResponse.js";
+import ApiError from "../helpers/apiError.js";
 
 export const getAllTopic = async (req, res, next) => {
     try {
@@ -67,22 +69,20 @@ export const getAllTopic = async (req, res, next) => {
             ]).exec(); // .exec() çağrısı ile sorguyu yürütün ve lean kullanın
 
             if (topics.length === 0) {
-                return res.status(404).json({
-                    success: false,
-                    errors: "Listelenecek bir gönderi bulunamadı",
+                sendResponse(res, 204, "Listelenecek bir gönderi bulunamadı", {
+                    topics: [],
                 });
+                // throw new ApiError("Listelencek bir gönderi yok", 404);
+            } else {
+                sendResponse(
+                    res,
+                    200,
+                    "Tüm gönderiler başarılı bir şekilde listelendi",
+                    { topics }
+                );
             }
-
-            return res.status(200).json({
-                success: true,
-                messages: "Tüm gönderiler başarılı bir şekilde listelendi",
-                data: topics,
-            });
         } else {
-            return res.status(400).json({
-                success: false,
-                errors: "Lütfen geçerli parametreler girin!",
-            });
+            throw new ApiError("Geçersiz sıralama parametreleri", 400);
         }
     } catch (error) {
         return next(error);
@@ -98,10 +98,7 @@ export const getTopic = async (req, res, next) => {
             .lean();
 
         if (!topic) {
-            return res.status(404).json({
-                success: false,
-                errors: "Gönderi bulunamadı",
-            });
+            throw new ApiError("Gönderi bulunamadı", 404);
         }
 
         // Yorumları ayrıca çekin
@@ -122,14 +119,13 @@ export const getTopic = async (req, res, next) => {
         // Topic nesnesine yorumları, yorum sayısını, likeCount ve dislikeCount'u ekleyin
         topic.comments = comments;
         topic.commentCount = comments.length;
-
-        res.status(200).json({
-            success: true,
-            message: "Gönderi bilgileri başarılı bir şekilde alındı",
-            data: topic,
-        });
+        sendResponse(
+            res,
+            200,
+            "Gönderi bilgileri başarılı bir şekilde alındı",
+            { topic }
+        );
     } catch (error) {
-        console.error("Hata:", error);
         return next(error);
     }
 };
@@ -138,24 +134,25 @@ export const addTopic = async (req, res, next) => {
     try {
         const userId = new mongoose.Types.ObjectId(req.user.id);
         const { title, content } = req.body;
+        console.log("new topic: ", title, content);
         const topic = await Topic.create({
             title,
             content,
             author: userId,
         });
-        if (!topic) {
-            return res.status(400).json({
-                success: false,
-                errors: "Gönderi kayıt edilemedi",
-            });
-        }
-        return res.status(200).json({
-            success: true,
-            message: "Yeni gönderi başarılı bir şekilde kayıt edildi",
-            data: topic,
-        });
+        const newTopic = await Topic.findById(topic._id)
+            .populate("author", "username") // Yazar bilgilerini populate edin
+            .lean();
+        // Topic'in likeCount ve dislikeCount değerlerini hesaplayın
+        topic.likeCount = topic.likes.length;
+        topic.dislikeCount = topic.dislikes.length;
+        sendResponse(
+            res,
+            200,
+            "Yeni gönderi başarılı bir şekilde kayıt edili",
+            { topic: newTopic }
+        );
     } catch (error) {
-        console.log(error);
         return next(error);
     }
 };
@@ -167,28 +164,17 @@ export const deleteTopic = async (req, res, next) => {
         const topic = await Topic.findById(id);
 
         if (!topic) {
-            return res.status(404).json({
-                success: false,
-                errors: "Gönderi bulunamadı",
-            });
+            throw new ApiError("Silinecek gönderi bulunamadı", 404);
         }
 
         // Kullanıcının kendi topic'ini mi siliyor kontrolü
         if (topic.author.toString() !== userId) {
-            return res.status(403).json({
-                success: false,
-                errors: "Bu işlem için yetkiniz yok",
-            });
+            throw new ApiError("Bu işlemi yapmaya yetkiniz yok", 403);
         }
 
         await topic.remove();
-
-        return res.status(200).json({
-            success: true,
-            message: "Gönderi başarıyla silindi",
-        });
+        sendResponse(res, 204);
     } catch (error) {
-        console.error("Hata:", error);
         return next(error);
     }
 };
@@ -197,21 +183,26 @@ export const likeTopicById = async (req, res, next) => {
     try {
         const userId = req.user.id;
         const topicId = req.params.id;
-        await likeTopic(userId, topicId)
-            .then((topic) => {
-                return res.status(200).json({
-                    success: true,
-                    message: "İşlem başarılı",
-                });
-            })
-            .catch((error) => {
-                return res.status(400).json({
-                    success: false,
-                    errors: "İşlem başarısız",
-                });
-            });
+        console.log(
+            "likeTopicById çağrıldı. UserId:",
+            userId,
+            "TopicId:",
+            topicId
+        );
+
+        const updatedTopic = await likeTopic(userId, topicId);
+        console.log("Güncellenmiş topic:", updatedTopic);
+
+        sendResponse(res, 200, "İşlem başarılı", {
+            topic: {
+                _id: updatedTopic._id,
+                likes: updatedTopic.likes,
+                dislikes: updatedTopic.dislikes,
+            },
+        });
     } catch (error) {
-        return next(error);
+        console.error("likeTopicById'de hata:", error);
+        return next(new ApiError(error.message || "İşlem başarısız", 400));
     }
 };
 
@@ -219,20 +210,25 @@ export const dislikeTopicById = async (req, res, next) => {
     try {
         const userId = req.user.id;
         const topicId = req.params.id;
-        await dislikeTopic(userId, topicId)
-            .then((topic) => {
-                return res.status(200).json({
-                    success: true,
-                    message: "İşlem başarılı",
-                });
-            })
-            .catch((error) => {
-                return res.status(400).json({
-                    success: false,
-                    errors: "İşlem başarısız",
-                });
-            });
+        console.log(
+            "dislikeTopicById çağrıldı. UserId:",
+            userId,
+            "TopicId:",
+            topicId
+        );
+
+        const updatedTopic = await dislikeTopic(userId, topicId);
+        console.log("Güncellenmiş topic:", updatedTopic);
+
+        sendResponse(res, 200, "İşlem başarılı", {
+            topic: {
+                _id: updatedTopic._id,
+                likes: updatedTopic.likes,
+                dislikes: updatedTopic.dislikes,
+            },
+        });
     } catch (error) {
-        return next(error);
+        console.error("dislikeTopicById'de hata:", error);
+        return next(new ApiError(error.message || "İşlem başarısız", 400));
     }
 };

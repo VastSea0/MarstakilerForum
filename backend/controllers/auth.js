@@ -2,15 +2,14 @@ import User from "../models/user.js";
 import Topic from "../models/topic.js";
 import Jwt from "jsonwebtoken";
 import generateToken from "../helpers/generateToken.js";
+import sendResponse from "../helpers/sendResponse.js";
+import ApiError from "../helpers/apiError.js";
 
 export const register = async (req, res, next) => {
     try {
         const { firstName, lastName, username, password } = req.body;
         if ((!firstName || !lastName || !username, !password)) {
-            return res.status(400).json({
-                success: false,
-                errors: "Lütfen tüm gerekli alanları doldurun",
-            });
+            throw new ApiError("Lütfen gerekli alanları girin", 400);
         }
         const newUser = await User.create({
             firstName,
@@ -18,18 +17,10 @@ export const register = async (req, res, next) => {
             username,
             password,
         });
-        if (!newUser) {
-            return res.status(400).json({
-                success: false,
-                errors: "Kullanıcı kaydı başarısız oldu",
-            });
-        }
-        return res.status(200).json({
-            success: true,
-            message: "Yeni kullanıcı kaydı başarılı",
+        sendResponse(res, 200, "Yeni kullanıcı kaydı başarılı", {
+            user: newUser,
         });
     } catch (error) {
-        console.log(error);
         return next(error);
     }
 };
@@ -37,21 +28,22 @@ export const register = async (req, res, next) => {
 export const login = async (req, res, next) => {
     try {
         const { username, password } = req.body;
+        console.log("Username: ", username);
+        console.log("Password: ", password);
 
         if (!username || !password) {
-            return res.status(400).json({
-                success: false,
-                errors: "Lütfen Kullanıcı adı ve şifrenizi girin",
-            });
+            throw new ApiError("Lütfen kullanıcı adı ve şifrenizi girin", 400);
         }
 
-        const user = await User.findOne({ username });
+        const user = await User.findOne({ username: username });
+        console.log(user);
+        if (!user) {
+            throw new ApiError("Kullanıcı bulunamadı", 400);
+        }
+        const isMatch = await user.verifyPassword(password);
 
-        if (!user || !(await user.verifyPassword(password))) {
-            return res.status(400).json({
-                success: false,
-                errors: "Geçersiz kullanıcı adı veya şifre",
-            });
+        if (!isMatch) {
+            throw new ApiError("Geçersiz bir şifre girdiniz", 400);
         }
 
         const userData = {
@@ -70,21 +62,17 @@ export const login = async (req, res, next) => {
             process.env.REFRESH_SECRET_KEY,
             "30d"
         );
-
-        return res
-            .cookie("refreshToken", refreshToken, {
-                httpOnly: true,
-                secure: false, // Sadece production'da true
-                maxAge: 30 * 24 * 60 * 60 * 1000,
-            })
-            .status(200)
-            .json({
-                success: true,
-                message: "Kullanıcı girişi başarılı",
-                token: accessToken,
-            });
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: false, // Sadece production'da true
+            maxAge: 30 * 24 * 60 * 60 * 1000,
+        });
+        sendResponse(res, 200, "Kulanıcı girişi başarılı", {
+            token: accessToken,
+            user: userData,
+        });
     } catch (error) {
-        next(error);
+        return next(error);
     }
 };
 
@@ -93,21 +81,17 @@ export const logout = async (req, res, next) => {
         const cookies = req.cookies;
         const refreshToken = cookies.refreshToken;
 
-        if (!refreshToken)
-            return res.status(204).json({
-                success: false,
-                errors: "Oturum çerezi bulunamadı",
-            });
+        if (!refreshToken) {
+            throw new ApiError("Oturum çerezi bulunamadı", 400);
+        }
+
         res.clearCookie("refreshToken", {
             httpOnly: true,
             sameSite: "Strict",
             secure: false,
             path: "/", // ! önemliymişşş
         });
-        return res.status(200).json({
-            success: true,
-            message: "Başarılı bir şekilde çıkış yapıldı",
-        });
+        sendResponse(res, 200, "Oturum başarıyla sonlandırıldı");
     } catch (error) {
         return next(error);
     }
@@ -118,26 +102,27 @@ export const refreshToken = async (req, res, next) => {
         const cookies = req.cookies;
         const refreshToken = cookies.refreshToken;
         if (!refreshToken) {
-            return res.status(400).json({
-                success: false,
-                errors: "Oturum çerezi bulunamadı",
-            });
+            throw new ApiError("Oturum çerezi yok", 400);
         }
         Jwt.verify(
             refreshToken,
             process.env.REFRESH_SECRET_KEY,
             (err, decoded) => {
                 if (err) {
-                    return res.status(400).json({
-                        success: false,
-                        errors: "Geçersiz oturum çerezi",
-                    });
+                    if (err.name === "TokenExpiredError") {
+                        throw new ApiError("Oturum çerezi geçersiz", 400);
+                    }
                 }
-                const accessToken = generateToken(decoded.userData, "1h");
-                return res.status(200).json({
-                    success: true,
+                console.log("refresh token decoded user: ", decoded.user);
+                const accessToken = generateToken(
+                    decoded.user,
+                    process.env.ACCESS_SECRET_KEY,
+                    "1h"
+                );
+                console.log(decoded);
+                sendResponse(res, 200, "Oturum yenilendi", {
                     token: accessToken,
-                    data: decoded.userData,
+                    user: decoded.user,
                 });
             }
         );
@@ -155,12 +140,12 @@ export const getUser = async (req, res, next) => {
                 username: user.username,
                 role: user.role,
             };
-
-            return res.status(200).json({
-                success: true,
-                message: "Profil bilgileri başarılı bir şekilde alındı",
-                data: userData,
-            });
+            sendResponse(
+                res,
+                200,
+                "Profil bilgileri başarılı bir şekilde alındı",
+                { user: userData }
+            );
         }
     } catch (error) {
         return next(error);
@@ -168,50 +153,29 @@ export const getUser = async (req, res, next) => {
 };
 
 export const getUserProfile = async (req, res, next) => {
+    console.log("getUserProfile called - req.user:", req.user);
+    console.log("Requested user ID:", req.params.id);
     try {
         const user = await User.findById(req.params.id).lean();
 
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "Kullanıcı bulunamadı",
-            });
+            throw new ApiError("Kullanıcı bulunamadı", 404);
         }
 
-        const topics = await Topic.find({ author: user._id }).lean();
-        console.log("\n\n\nUser Profile Topics: ", topics);
-        const filteredTopics = topics.map((topic) => {
-            return {
-                _id: topic._id,
-                title: topic.title,
-                content: topic.content,
-                author: topic.author,
-                authorName: user.username,
-                commentCount: topic.comments.length,
-                likeCount: topic.likes.length,
-                dislikeCount: topic.dislikes.length,
-                createdAt: topic.createdAt,
-            };
-        });
-
         const userProfile = {
-            user: {
-                id: user._id,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                username: user.username,
-                role: user.role,
-            },
-            topics: filteredTopics,
+            id: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            username: user.username,
+            role: user.role,
         };
 
-        console.log("User Profile Topics: ", userProfile.topics);
-        return res.status(200).json({
-            success: true,
-            message:
-                "Profil bilgileri ve gönderiler başarılı bir şekilde alındı",
-            data: userProfile,
-        });
+        sendResponse(
+            res,
+            200,
+            "Profile bilgileri başarılı bir şekilde alındı",
+            { user: userProfile }
+        );
     } catch (error) {
         return next(error);
     }
@@ -223,15 +187,9 @@ export const updateUserProfile = async (req, res, next) => {
         const updateData = req.body;
         const updatedUser = await User.findByIdAndUpdate(userId, updateData);
         if (updatedUser) {
-            return res.status(200).json({
-                success: true,
-                message: "Profil başarılı bir şekilde güncellendi",
-            });
+            sendResponse(res, 200, "Profil bilgileri güncellendi");
         } else {
-            return res.status(400).json({
-                success: false,
-                errors: "Profil güncellenemedi",
-            });
+            throw new ApiError("Profil bilgileri güncellenemedi", 404);
         }
     } catch (error) {
         return next(error);

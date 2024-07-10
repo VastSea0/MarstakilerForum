@@ -1,6 +1,8 @@
 import Comment from "../models/comment.js";
 import likeComment from "../helpers/likeComment.js";
 import dislikeComment from "../helpers/dislikeComment.js";
+import sendResponse from "../helpers/sendResponse.js";
+import ApiError from "../helpers/apiError.js";
 
 export const addComment = async (req, res, next) => {
     try {
@@ -8,10 +10,7 @@ export const addComment = async (req, res, next) => {
         const userId = req.user.id;
         const { content } = req.body;
         if (!content || !topicId) {
-            return res.status(400).json({
-                success: false,
-                errors: "Lütfen geçerli bir yorum yazınız",
-            });
+            throw new ApiError("Yorum içeriği boş olamaz", 400);
         }
         const comment = await Comment.create({
             content,
@@ -23,14 +22,18 @@ export const addComment = async (req, res, next) => {
             const populatedComment = await Comment.findById(
                 comment._id
             ).populate("author", "username");
-            return res.status(200).json({
-                success: true,
-                message: "Yorumunuz başarılı bir şekilde eklendi",
-                comment: populatedComment,
-            });
+
+            if (populatedComment) {
+                sendResponse(res, 201, "Yorum başarıyla oluşturuldu", {
+                    comment: populatedComment,
+                });
+            } else {
+                throw new ApiError("Yorum bulunamadı", 404);
+            }
+        } else {
+            throw new ApiError("Yorum oluşturulurken bir hata oluştu", 500);
         }
     } catch (error) {
-        console.log(error);
         return next(error);
     }
 };
@@ -40,47 +43,50 @@ export const likeCommentById = async (req, res, next) => {
         const userId = req.user.id;
         const commentId = req.params.id;
         console.log(
-            `Attempting to like comment: ${commentId} by user: ${userId}`
+            "likeCommentById çağrıldı. UserId:",
+            userId,
+            "CommentId:",
+            commentId
         );
-        await likeComment(userId, commentId)
-            .then((comment) => {
-                console.log(`Successfully liked comment: ${commentId}`);
-                return res.status(200).json({
-                    success: true,
-                    message: "İşlem başarılı",
-                });
-            })
-            .catch((error) => {
-                console.error(`Error liking comment: ${commentId}`, error);
-                return res.status(400).json({
-                    success: false,
-                    errors: "İşlem başarısız: " + error.message,
-                });
-            });
+
+        const updatedComment = await likeComment(userId, commentId);
+        console.log("Güncellenmiş yorum:", updatedComment);
+
+        sendResponse(res, 200, "İşlem başarılı", {
+            comment: {
+                _id: updatedComment._id,
+                likes: updatedComment.likes,
+                dislikes: updatedComment.dislikes,
+            },
+        });
     } catch (error) {
-        console.error(`Unexpected error in likeCommentById`, error);
-        return next(error);
+        console.error("likeCommentById'de hata:", error);
+        return next(new ApiError(error.message || "İşlem başarısız", 400));
     }
 };
-
 export const dislikeCommentById = async (req, res, next) => {
     try {
         const userId = req.user.id;
         const commentId = req.params.id;
-        await dislikeComment(userId, commentId)
-            .then((comment) => {
-                return res.status(200).json({
-                    success: true,
-                    message: "İşlem başarılı",
-                });
-            })
-            .catch((error) => {
-                return res.status(400).json({
-                    success: false,
-                    errors: "İşlem başarısız",
-                });
-            });
+        console.log(
+            "dislikeCommentById çağrıldı. UserId:",
+            userId,
+            "CommentId:",
+            commentId
+        );
+
+        const updatedComment = await dislikeComment(userId, commentId);
+        console.log("Güncellenmiş yorum:", updatedComment);
+
+        sendResponse(res, 200, "İşlem başarılı", {
+            comment: {
+                _id: updatedComment._id,
+                likes: updatedComment.likes,
+                dislikes: updatedComment.dislikes,
+            },
+        });
     } catch (error) {
-        return next(error);
+        console.error("dislikeCommentById'de hata:", error);
+        return next(new ApiError(error.message || "İşlem başarısız", 400));
     }
 };

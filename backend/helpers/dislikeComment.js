@@ -6,18 +6,32 @@ const dislikeComment = async (userId, commentId) => {
         if (!comment) {
             throw new Error("Böyle bir yorum yok");
         }
-        if (!comment.dislikes.includes(userId)) {
+
+        const likeIndex = comment.likes.indexOf(userId);
+        const dislikeIndex = comment.dislikes.indexOf(userId);
+
+        if (dislikeIndex !== -1) {
+            // Kullanıcı zaten dislike atmış, dislike'ı kaldır
+            comment.dislikes.splice(dislikeIndex, 1);
+            console.log("Dislike kaldırıldı");
+        } else {
+            // Kullanıcı dislike atmamış, dislike ekle
             comment.dislikes.push(userId);
-            const likeIndex = comment.likes.indexOf(userId);
+            console.log("Dislike eklendi");
+
+            // Eğer like varsa, onu kaldır
             if (likeIndex !== -1) {
                 comment.likes.splice(likeIndex, 1);
+                console.log("Var olan like kaldırıldı");
             }
-            await comment.save();
         }
+
+        console.log("Güncellenmiş yorum:", comment);
+        await comment.save();
         return comment;
     } catch (error) {
-        console.error("Error in dislikeComment:", error);
-        throw error; // Orijinal hatayı fırlat
+        console.error("dislikeComment fonksiyonunda hata:", error);
+        throw error;
     }
 };
 export default dislikeComment;
