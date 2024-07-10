@@ -2,7 +2,7 @@
 import axios from 'axios'
 
 // API'nin temel URL'ini tanımlıyoruz. Tüm istekler bu URL'e gönderilecek.
-const BASE_URL = 'http://localhost:4000'
+const BASE_URL = 'https://marstakilerforum.onrender.com/'
 
 // Axios instance'ı oluşturmak için bir yardımcı fonksiyon tanımlıyoruz.
 // Bu fonksiyon, özelleştirilebilir bir yapılandırma objesi alır.
