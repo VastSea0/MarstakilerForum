@@ -4,10 +4,11 @@ import { useAuthStore } from '@/stores/auth'
 import { toRaw } from 'vue'
 
 const authStore = useAuthStore()
-import { onMounted, watch } from 'vue'
+import { onMounted, watch, computed } from 'vue'
 
 // Debug: authStore'in doğru şekilde yüklendiğinden emin olun
 console.log('authStore:', authStore)
+const isAuthenticated = computed(() => authStore.authReady)
 
 watch(
   () => authStore.isAuthenticated,
@@ -32,7 +33,7 @@ onMounted(() => {
 </script>
 <template>
   <li><RouterLink to="/about">🧐 Hakkımızda</RouterLink></li>
-  <template v-if="authStore.isAuthenticated">
+  <template v-if="isAuthenticated">
     <li>
       <RouterLink
         v-if="authStore.user && authStore.user.id"
