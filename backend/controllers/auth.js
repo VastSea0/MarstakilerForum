@@ -64,8 +64,10 @@ export const login = async (req, res, next) => {
         );
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: false, // Sadece production'da true
+            sameSite: "Strict",
+            secure: process.env.NODE_ENV === "prod" ? true : false, // Sadece production'da true
             maxAge: 30 * 24 * 60 * 60 * 1000,
+            path: "/", // ! önemliymişşş
         });
         sendResponse(res, 200, "Kulanıcı girişi başarılı", {
             token: accessToken,
@@ -88,6 +90,7 @@ export const logout = async (req, res, next) => {
         res.clearCookie("refreshToken", {
             httpOnly: true,
             sameSite: "Strict",
+            secure: process.env.NODE_ENV === "prod" ? true : false, // Sadece production'da true
             secure: false,
             path: "/", // ! önemliymişşş
         });
