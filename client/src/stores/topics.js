@@ -33,9 +33,14 @@ export const useTopicsStore = defineStore('topic', () => {
   const getTopicsByUser = async (userId) => {
     errorStore.clearError()
     try {
-      await getAllTopics()
-      topicsByUser.value = topics.value.filter((t) => t.author === userId)
-      return topicsByUser.value
+      const response = await api.get(`/user/${userId}`)
+      if (response.status === 200) {
+        topicsByUser.value = response.data.data.topics
+        return topicsByUser.value
+      } else if (response.status === 204) {
+        topicsByUser.value = []
+        return topicsByUser.value
+      }
     } catch (error) {
       handleError(error, 'Kullanıcı gönderileri alınamadı')
     }
