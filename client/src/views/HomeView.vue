@@ -35,7 +35,7 @@ onMounted(async () => {
 </script>
 <template>
   <template v-if="posts.length === 0">
-    <NoPost v-if="errorStore.error" :message="errorStore.error"></NoPost>
+    <NoPost v-if="errorStore.error" :message="errorStore.error.toString()"></NoPost>
   </template>
   <div v-else>
     <h4 class="text-2xl font-semibold mb-3">Gönderiler</h4>
