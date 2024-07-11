@@ -19,8 +19,8 @@ const app = e();
 app.use(
     cors({
         origin: [
-            "https://marstakiler-forum.vercel.app/",
-            "http://localhost:3000/",
+            "https://marstakiler-forum.vercel.app",
+            "http://localhost:5173",
         ],
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
