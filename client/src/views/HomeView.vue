@@ -4,7 +4,9 @@ import NoPost from '@/components/notFoundMessageItem.vue'
 import { ref, onMounted, computed } from 'vue'
 import { useTopicsStore } from '@/stores/topics'
 import { useErrorStore } from '@/stores/error'
+import { useAuthStore } from '@/stores/auth'
 
+const authStore = useAuthStore()
 const topicStore = useTopicsStore()
 const errorStore = useErrorStore()
 const errorMessage = ref('')
@@ -44,7 +46,7 @@ onMounted(async () => {
       <Post :post="post"></Post>
     </template>
   </div>
-  <Transition name="slide-fade">
+  <Transition v-if="authStore.authReady" name="slide-fade">
     <div
       v-if="addPost"
       class="fixed bottom-16 md:bottom-20 left-1/2 transform -translate-x-1/2 flex place-content-center w-full"
@@ -88,7 +90,7 @@ onMounted(async () => {
       </div>
     </div>
   </Transition>
-  <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex place-content-center w-full">
+  <div v-if="authStore.authReady" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex place-content-center w-full">
     <button @click="addPost = !addPost" class="btn md:btn-lg btn-circle btn-neutral shadow-md">
       {{ addPost ? 'Kapat' : 'Ekle' }}
     </button>
