@@ -6,6 +6,7 @@ import * as topic from "../controllers/topic.js";
 
 router.get("/", topic.getAllTopic);
 router.get("/:id", topic.getTopic);
+router.get("/user/:id", topic.getTopicsByUser);
 router.use(requireAuth);
 router.post("/", topic.addTopic);
 router.delete("/:id", topic.deleteTopic);

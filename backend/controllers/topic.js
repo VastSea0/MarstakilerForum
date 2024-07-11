@@ -130,6 +130,71 @@ export const getTopic = async (req, res, next) => {
     }
 };
 
+export const getTopicsByUser = async (req, res, next) => {
+    const { userId } = req.params;
+    try {
+        const topics = await Topic.aggregate([
+            // Filtreleme: Belirtilen kullanıcı ID'sine göre
+            {
+                $match: {
+                    author: mongoose.Types.ObjectId(userId),
+                },
+            },
+            // Yazar bilgilerini almak için users koleksiyonu ile join işlemi gerçekleştirelim
+            {
+                $lookup: {
+                    from: "users", // users koleksiyonu
+                    localField: "author", // topics koleksiyonundaki alan
+                    foreignField: "_id", // users koleksiyonundaki alan
+                    as: "authorDetails", // birleştirilen veri için alias
+                },
+            },
+            // Unwind işlemi ile authorDetails array'ini açalım
+            {
+                $unwind: "$authorDetails",
+            },
+            // Yorumlar için lookup işlemi
+            {
+                $lookup: {
+                    from: "comments", // comments koleksiyonu
+                    localField: "_id", // topics koleksiyonundaki alan
+                    foreignField: "topic", // comments koleksiyonundaki alan
+                    as: "comments", // birleştirilen veri için alias
+                },
+            },
+            // Gruplama işlemi yaparak like, dislike ve yorum sayılarını toplayalım
+            {
+                $project: {
+                    _id: 1,
+                    title: 1,
+                    content: 1,
+                    "author._id": "$authorDetails._id",
+                    "author.username": "$authorDetails.username",
+                    likeCount: { $size: "$likes" },
+                    dislikeCount: { $size: "$dislikes" },
+                    commentCount: { $size: "$comments" },
+                    createdAt: 1,
+                },
+            },
+        ]).exec(); // .exec() çağrısı ile sorguyu yürütün
+
+        if (topics.length === 0) {
+            sendResponse(res, 204, "Kullanıcıya ait bir gönderi bulunamadı", {
+                topics: [],
+            });
+        } else {
+            sendResponse(
+                res,
+                200,
+                "Kullanıcıya ait tüm gönderiler başarılı bir şekilde listelendi",
+                { topics }
+            );
+        }
+    } catch (error) {
+        return next(error);
+    }
+};
+
 export const addTopic = async (req, res, next) => {
     try {
         const userId = new mongoose.Types.ObjectId(req.user.id);
